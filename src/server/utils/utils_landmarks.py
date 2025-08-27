@@ -1,3 +1,5 @@
+import io
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -90,6 +92,27 @@ def show_landmarks(img, lmks, circle_size=3, color=(255, 0, 0), figsize=(10,8), 
     plt.figure(figsize=figsize)
     plt.imshow(set_circles_on_img(img, lmks, circle_size=circle_size, color=color, is_copy=is_copy))
     plt.show()
+
+
+def show_landmarks_return_img(img, lmks, circle_size=3, color=(255, 0, 0), is_copy=True):
+    """
+    Plot landmarks on image and return the modified image as a JPEG byte stream.
+    :param img: source image (numpy array)
+    :param lmks: landmarks to show
+    :param circle_size: landmarks size
+    :param color: landmarks color
+    :param is_copy: plot on source image or use copy
+    :return: Bytes of the processed image in JPEG format
+    """
+    # Create a copy to draw on, so the original image is not modified
+    processed_img = set_circles_on_img(img, lmks, circle_size=circle_size, color=color, is_copy=is_copy)
+
+    # Encode the image to JPEG format in memory
+    is_success, buffer = cv2.imencode(".jpg", processed_img)
+    if not is_success:
+        raise Exception("Could not encode image to JPEG.")
+
+    return io.BytesIO(buffer)
 
 
 def alignment_orig(src_img, src_pts, ncols=96, nrows=112, custom_align=None):
