@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Scanner App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Face Scanner</h1>
+
+        <div class="upload-section">
+            <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            <button class="upload-button" onclick="document.getElementById('imageUpload').click()">Upload Image</button>
+        </div>
+
+        <div class="image-preview-container">
+            <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
