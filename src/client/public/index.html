@@ -8,21 +8,52 @@
 </head>
 <body>
     <div class="container">
-        <h1>Face Scanner</h1>
+        <!-- Основная страница загрузки фото -->
+        <div id="mainPage" class="page">
+            <h1>Face Scanner</h1>
 
-        <div class="upload-section">
-            <!-- Скрытый input type="file", который будет вызван по клику на кнопку. -->
-            <!-- Атрибут accept="image/*" позволит браузеру предложить выбор между галереей и камерой на мобильных устройствах. [1, 2, 3] -->
-            <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            <div class="upload-section">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="upload-button" onclick="document.getElementById('imageUpload').click()">Upload Image</button>
+            </div>
 
-            <!-- Кнопка, которая инициирует клик по скрытому input type="file" -->
-            <button class="upload-button" onclick="document.getElementById('imageUpload').click()">Upload Image</button>
+            <!-- Контейнер для предпросмотра изображения и индикатора загрузки -->
+            <div id="imagePreviewContainer" class="image-preview-container hidden">
+                <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
+                <div id="loadingIndicator" class="loading-spinner hidden"></div>
+            </div>
+
+            <!-- Контейнер для кнопок категорий (Разум, Тело, Лицо, ?) -->
+            <div id="categoryButtonsContainer" class="category-buttons-container hidden">
+                <button class="category-button" data-category="mind">Разум</button>
+                <button class="category-button" data-category="body">Тело</button>
+                <button class="category-button" data-category="face">Лицо</button>
+                <button class="category-button" data-category="faq">?</button>
+            </div>
         </div>
 
-        <div class="image-preview-container">
-            <!-- Элемент img для отображения выбранного/обработанного изображения -->
-            <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
+        <!-- Страница советов (Разум Совет 1, Тело Совет 1 и т.д.) -->
+        <div id="advicePage" class="page hidden">
+            <div class="header">
+                <button class="back-button" onclick="goBackToMainPage()">← Назад</button>
+                <h2 id="advicePageTitle"></h2>
+            </div>
+            <div id="adviceButtonsContainer" class="advice-buttons-container">
+                <!-- Кнопки советов будут динамически добавляться сюда JS -->
+            </div>
         </div>
+
+        <!-- Страница конкретного совета -->
+        <div id="tipDetailPage" class="page hidden">
+            <div class="header">
+                <button class="back-button" onclick="goBackToAdvicePage()">← Назад</button>
+                <h2 id="tipDetailPageTitle"></h2>
+            </div>
+            <div class="tip-content">
+                <p id="tipDetailText"></p>
+            </div>
+        </div>
+
     </div>
 
     <script src="script.js"></script>

@@ -7,7 +7,6 @@ body {
     margin: 0;
     background-color: #f0f2f5;
     color: #333;
-    /* Убедимся, что на мобильных устройствах body не прокручивается горизонтально */
     overflow-x: hidden;
 }
 
@@ -17,9 +16,15 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 90%; /* Ширина контейнера для мобильных устройств */
-    max-width: 400px; /* Максимальная ширина для больших экранов */
-    box-sizing: border-box; /* Учитываем padding в ширине */
+    width: 90%;
+    max-width: 400px;
+    box-sizing: border-box;
+    /* Убедитесь, что контейнер достаточно высок для всех элементов */
+    min-height: 400px; /* Добавлено */
+    display: flex; /* Flexbox для управления содержимым страниц */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 h1 {
@@ -27,8 +32,19 @@ h1 {
     margin-bottom: 20px;
 }
 
+/* Стили для страниц */
+.page {
+    width: 100%;
+    height: 100%; /* Страницы занимают всю доступную высоту контейнера */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
 .upload-section {
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .upload-button {
@@ -40,9 +56,9 @@ h1 {
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    width: 100%; /* Кнопка на всю ширину */
+    width: 100%;
     box-sizing: border-box;
-    -webkit-appearance: none; /* Для лучшей кроссбраузерности на iOS */
+    -webkit-appearance: none;
 }
 
 .upload-button:hover {
@@ -54,34 +70,170 @@ h1 {
     border: 1px dashed #ccc;
     border-radius: 8px;
     padding: 10px;
-    min-height: 150px; /* Минимальная высота для красивого отображения */
+    min-height: 150px;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* Обрезка изображения, если оно слишком большое */
-    background-color: #e9ecef; /* Немного темнее фон для контейнера */
+    overflow: hidden;
+    background-color: #e9ecef;
+    width: 100%; /* Занимаем всю доступную ширину */
+    position: relative; /* Для позиционирования спиннера */
 }
 
 #previewImage {
-    max-width: 100%; /* Изображение будет адаптивным и не выйдет за пределы контейнера [4, 5, 6] */
-    height: auto; /* Сохраняем пропорции изображения [4, 5] */
+    max-width: 100%;
+    height: auto;
     border-radius: 5px;
-    display: block; /* Убираем лишнее пространство под изображением */
-    object-fit: contain; /* Обеспечивает, что изображение полностью видно внутри контейнера */
+    display: block;
+    object-fit: contain;
 }
 
 .hidden {
-    display: none;
+    display: none !important; /* !important для гарантированного скрытия */
+}
+
+/* Спиннер загрузки */
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    position: absolute; /* Позиционируем поверх предпросмотра */
+    top: 50%;
+    left: 50%;
+    margin-top: -20px; /* Центрирование */
+    margin-left: -20px; /* Центрирование */
+    z-index: 10;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Контейнер для кнопок категорий */
+.category-buttons-container {
+    margin-top: 30px; /* Отступ от предпросмотра */
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap; /* Позволяем кнопкам переноситься на новую строку */
+    justify-content: space-around; /* Распределяем кнопки равномерно */
+    gap: 10px; /* Отступ между кнопками */
+}
+
+.category-button, .modal-button { /* Объединяем стили, если выглядят одинаково */
+    background-color: #6c757d; /* Серый цвет для кнопок категорий */
+    color: white;
+    padding: 12px 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1 1 calc(50% - 10px); /* 2 кнопки в ряд с отступом */
+    max-width: calc(50% - 10px); /* Ограничение ширины для 2 кнопок в ряд */
+    box-sizing: border-box;
+}
+
+.category-button:hover, .modal-button:hover {
+    background-color: #5a6268;
+}
+
+/* Стили для страницы советов и страницы конкретного совета */
+.header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.header h2 {
+    margin: 0 auto; /* Центрирует заголовок */
+    flex-grow: 1; /* Заголовок занимает оставшееся пространство */
+    text-align: center;
+    padding-right: 50px; /* Компенсируем ширину кнопки "Назад" */
+}
+
+.back-button {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
+.advice-buttons-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column; /* Кнопки одна под другой */
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Кнопки советов */
+.advice-button {
+    background-color: #28a745; /* Зеленый цвет для советов */
+    color: white;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.advice-button:hover {
+    background-color: #218838;
+}
+
+.tip-content {
+    margin-top: 20px;
+    text-align: left;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.tip-content p {
+    margin: 0;
+    line-height: 1.6;
 }
 
 /* Медиа-запросы для небольших корректировок на очень маленьких экранах */
 @media (max-width: 600px) {
     .container {
         padding: 15px;
+        min-height: 100vh; /* На мобильных устройствах пусть контейнер занимает всю высоту */
+        border-radius: 0; /* Убираем скругление углов на весь экран */
+        box-shadow: none; /* Убираем тень */
     }
 
     .upload-button {
         padding: 10px 15px;
         font-size: 15px;
+    }
+
+    .category-button {
+        flex: 1 1 100%; /* Каждая кнопка на всю ширину на маленьких экранах */
+        max-width: 100%;
+    }
+
+    .header h2 {
+        font-size: 1.2em; /* Чуть уменьшим размер заголовка */
     }
 }
