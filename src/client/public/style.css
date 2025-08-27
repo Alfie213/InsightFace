@@ -7,6 +7,8 @@ body {
     margin: 0;
     background-color: #f0f2f5;
     color: #333;
+    /* Убедимся, что на мобильных устройствах body не прокручивается горизонтально */
+    overflow-x: hidden;
 }
 
 .container {
@@ -15,9 +17,9 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 90%;
-    max-width: 400px;
-    box-sizing: border-box;
+    width: 90%; /* Ширина контейнера для мобильных устройств */
+    max-width: 400px; /* Максимальная ширина для больших экранов */
+    box-sizing: border-box; /* Учитываем padding в ширине */
 }
 
 h1 {
@@ -38,8 +40,9 @@ h1 {
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    width: 100%;
+    width: 100%; /* Кнопка на всю ширину */
     box-sizing: border-box;
+    -webkit-appearance: none; /* Для лучшей кроссбраузерности на iOS */
 }
 
 .upload-button:hover {
@@ -51,24 +54,27 @@ h1 {
     border: 1px dashed #ccc;
     border-radius: 8px;
     padding: 10px;
-    min-height: 150px;
+    min-height: 150px; /* Минимальная высота для красивого отображения */
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow: hidden; /* Обрезка изображения, если оно слишком большое */
+    background-color: #e9ecef; /* Немного темнее фон для контейнера */
 }
 
 #previewImage {
-    max-width: 100%;
-    height: auto;
+    max-width: 100%; /* Изображение будет адаптивным и не выйдет за пределы контейнера [4, 5, 6] */
+    height: auto; /* Сохраняем пропорции изображения [4, 5] */
     border-radius: 5px;
-    display: block;
+    display: block; /* Убираем лишнее пространство под изображением */
+    object-fit: contain; /* Обеспечивает, что изображение полностью видно внутри контейнера */
 }
 
 .hidden {
     display: none;
 }
 
+/* Медиа-запросы для небольших корректировок на очень маленьких экранах */
 @media (max-width: 600px) {
     .container {
         padding: 15px;
