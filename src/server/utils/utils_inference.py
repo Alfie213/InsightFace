@@ -1,4 +1,6 @@
 import math
+from pathlib import Path
+
 import scipy
 import scipy.misc
 import torch
@@ -10,8 +12,14 @@ from lib.config import config, config_imagenet, merge_configs
 
 def get_model_by_name(model_name, root_models_path='hrnetv2_models', prefix='HR18-', model_type='landmarks', device='cuda'):
 
-    checkpoint_path = f'{root_models_path}/{prefix}{model_name}.pth'
-    config_path = f'{root_models_path}/{prefix}{model_name}.yaml'
+    project_root = Path(__file__).resolve().parents[3]
+
+    models_dir = project_root / 'hrnetv2_models'
+    checkpoint_path = models_dir / f'{prefix}{model_name}.pth'
+    config_path = models_dir / f'{prefix}{model_name}.yaml'
+
+    # checkpoint_path = f'{root_models_path}/{prefix}{model_name}.pth'
+    # config_path = f'{root_models_path}/{prefix}{model_name}.yaml'
 
     merge_configs(config, config_path)
 

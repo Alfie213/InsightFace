@@ -1,6 +1,6 @@
 import cv2
-from utils_inference import get_lmks_by_img, get_model_by_name, get_preds, decode_preds, crop
-from utils_landmarks import show_landmarks, get_five_landmarks_from_net, alignment_orig
+from src.server.utils.utils_inference import get_lmks_by_img, get_model_by_name
+from src.server.utils.utils_landmarks import show_landmarks
 
 model = get_model_by_name('WFLW', device='cuda')
 
