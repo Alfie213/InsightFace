@@ -6,7 +6,7 @@ current_file = Path(__file__).resolve()
 PROJECT_ROOT = current_file.parent.parent.parent # Move up 3 levels from main.py to project root
 
 images_dir = PROJECT_ROOT / 'images'
-image_path = images_dir / 'image.jpg'
+image_path = images_dir / 'image.png'
 
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
 from utils.utils_landmarks import show_landmarks
