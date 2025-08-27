@@ -13,7 +13,11 @@
             <h1>Face Scanner</h1>
 
             <div class="upload-section">
+                <!-- Скрытый input type="file", который будет вызван по клику на кнопку. -->
+                <!-- Атрибут accept="image/*" позволит браузеру предложить выбор между галереей и камерой на мобильных устройствах. -->
                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+
+                <!-- Кнопка, которая инициирует клик по скрытому input type="file" -->
                 <button class="upload-button" onclick="document.getElementById('imageUpload').click()">Upload Image</button>
             </div>
 

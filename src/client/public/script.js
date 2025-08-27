@@ -44,6 +44,7 @@ const adviceData = {
 };
 
 let currentCategory = ''; // Для отслеживания текущей категории советов
+let processedImageUrl = "#"; // Новая переменная для хранения URL обработанного изображения
 
 // --- Функции навигации ---
 function showPage(pageElement) {
@@ -54,15 +55,29 @@ function showPage(pageElement) {
 
 function goBackToMainPage() {
     showPage(mainPage);
-    // Сбрасываем состояние предпросмотра при возвращении на главную
-    imagePreviewContainer.classList.add('hidden');
-    previewImage.classList.add('hidden');
-    previewImage.src = "#";
-    categoryButtonsContainer.classList.add('hidden');
+
+    // Если есть обработанное изображение, показываем контейнер предпросмотра
+    if (processedImageUrl !== "#") {
+        imagePreviewContainer.classList.remove('hidden');
+        previewImage.classList.remove('hidden');
+        previewImage.src = processedImageUrl; // Восстанавливаем обработанное изображение
+        categoryButtonsContainer.classList.remove('hidden'); // И кнопки категорий
+    } else {
+        // Если обработанного фото нет, скрываем предпросмотр и кнопки
+        imagePreviewContainer.classList.add('hidden');
+        previewImage.classList.add('hidden');
+        previewImage.src = "#";
+        categoryButtonsContainer.classList.add('hidden');
+    }
+    loadingIndicator.classList.add('hidden'); // Убедимся, что спиннер скрыт
 }
 
 function goBackToAdvicePage() {
     showPage(advicePage);
+    // Восстанавливаем список советов для текущей категории
+    if (currentCategory) {
+        showAdviceList(currentCategory);
+    }
 }
 
 // --- Обработчик загрузки изображения ---
@@ -75,17 +90,19 @@ imageUploadInput.addEventListener('change', async function(event) {
         // 2. Скрываем изображение, показываем спиннер загрузки
         previewImage.classList.add('hidden');
         loadingIndicator.classList.remove('hidden');
-        categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий, если они были видны
+        categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий
 
-        // 3. (Опционально) Отображаем загруженное фото на фронтенде сразу
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Можно показывать загруженное изображение под спиннером,
-            // или дождаться обработанного. Пока просто скрываем его.
-            // previewImage.src = e.target.result;
-            // previewImage.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+        // Очищаем предыдущее обработанное изображение, пока идет загрузка нового
+        processedImageUrl = "#";
+        previewImage.src = "#";
+
+        // 3. (Опционально) Отображаем загруженное фото на фронтенде сразу, если нужно
+        // const reader = new FileReader();
+        // reader.onload = function(e) {
+        //     previewImage.src = e.target.result;
+        //     previewImage.classList.remove('hidden');
+        // };
+        // reader.readAsDataURL(file);
 
         // 4. Отправляем фото на бэкенд для обработки
         const formData = new FormData();
@@ -101,7 +118,9 @@ imageUploadInput.addEventListener('change', async function(event) {
                 const blob = await response.blob();
                 const imageUrl = URL.createObjectURL(blob);
 
+                processedImageUrl = imageUrl; // Сохраняем URL обработанного изображения
                 previewImage.src = imageUrl; // Отображаем обработанное изображение
+
                 previewImage.classList.remove('hidden'); // Показываем изображение
                 loadingIndicator.classList.add('hidden'); // Скрываем спиннер
                 categoryButtonsContainer.classList.remove('hidden'); // Показываем кнопки категорий
@@ -110,6 +129,7 @@ imageUploadInput.addEventListener('change', async function(event) {
                 console.error('Ошибка при обработке изображения:', errorData.error);
                 alert('Ошибка при обработке изображения: ' + errorData.error);
                 // В случае ошибки скрываем все и возвращаемся к исходному состоянию
+                processedImageUrl = "#"; // Сбрасываем URL
                 previewImage.src = "#";
                 previewImage.classList.add('hidden');
                 loadingIndicator.classList.add('hidden');
@@ -119,6 +139,7 @@ imageUploadInput.addEventListener('change', async function(event) {
             console.error('Произошла ошибка сети или сервера:', error);
             alert('Не удалось связаться с сервером. Пожалуйста, убедитесь, что бэкенд запущен, и попробуйте еще раз.');
             // В случае ошибки скрываем все и возвращаемся к исходному состоянию
+            processedImageUrl = "#"; // Сбрасываем URL
             previewImage.src = "#";
             previewImage.classList.add('hidden');
             loadingIndicator.classList.add('hidden');
@@ -126,12 +147,14 @@ imageUploadInput.addEventListener('change', async function(event) {
         }
 
     } else {
-        // Если файл не выбран, скрываем предпросмотр
-        imagePreviewContainer.classList.add('hidden');
-        previewImage.src = "#";
-        previewImage.classList.add('hidden');
+        // Если файл не выбран, скрываем предпросмотр, если нет обработанного фото
+        if (processedImageUrl === "#") {
+            imagePreviewContainer.classList.add('hidden');
+            previewImage.src = "#";
+        }
+        previewImage.classList.add('hidden'); // Скрываем, если выбирали, но отменили
         loadingIndicator.classList.add('hidden');
-        categoryButtonsContainer.classList.add('hidden');
+        categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки, так как нет нового фото для обработки
     }
 });
 
@@ -146,7 +169,8 @@ categoryButtonsContainer.addEventListener('click', (event) => {
 
 function showAdviceList(category) {
     showPage(advicePage);
-    advicePageTitle.textContent = category.charAt(0).toUpperCase() + category.slice(1); // Капитализация первой буквы
+    // Капитализация первой буквы для заголовка
+    advicePageTitle.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ' Советы';
     adviceButtonsContainer.innerHTML = ''; // Очищаем предыдущие кнопки
 
     const advices = adviceData[category];
@@ -172,5 +196,17 @@ function showTipDetail(category, index) {
 
 // Инициализация: убедимся, что при загрузке страницы видна только основная страница
 document.addEventListener('DOMContentLoaded', () => {
-    goBackToMainPage(); // Скрываем все страницы кроме основной и сбрасываем состояние
+    // При старте приложения нужно убедиться, что все скрыто
+    // и показана только кнопка загрузки.
+    mainPage.classList.remove('hidden'); // Показываем главную страницу
+    advicePage.classList.add('hidden');
+    tipDetailPage.classList.add('hidden');
+
+    imagePreviewContainer.classList.add('hidden'); // Скрываем контейнер предпросмотра
+    previewImage.classList.add('hidden'); // Скрываем изображение
+    loadingIndicator.classList.add('hidden'); // Скрываем спиннер
+    categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий
+
+    // Сбрасываем URL, чтобы при первой загрузке не было старого изображения
+    processedImageUrl = "#";
 });

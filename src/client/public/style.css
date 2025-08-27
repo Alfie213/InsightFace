@@ -19,9 +19,8 @@ body {
     width: 90%;
     max-width: 400px;
     box-sizing: border-box;
-    /* Убедитесь, что контейнер достаточно высок для всех элементов */
-    min-height: 400px; /* Добавлено */
-    display: flex; /* Flexbox для управления содержимым страниц */
+    min-height: 400px;
+    display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
@@ -35,7 +34,7 @@ h1 {
 /* Стили для страниц */
 .page {
     width: 100%;
-    height: 100%; /* Страницы занимают всю доступную высоту контейнера */
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -76,8 +75,8 @@ h1 {
     align-items: center;
     overflow: hidden;
     background-color: #e9ecef;
-    width: 100%; /* Занимаем всю доступную ширину */
-    position: relative; /* Для позиционирования спиннера */
+    width: 100%;
+    position: relative;
 }
 
 #previewImage {
@@ -89,7 +88,7 @@ h1 {
 }
 
 .hidden {
-    display: none !important; /* !important для гарантированного скрытия */
+    display: none !important;
 }
 
 /* Спиннер загрузки */
@@ -100,11 +99,11 @@ h1 {
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
-    position: absolute; /* Позиционируем поверх предпросмотра */
+    position: absolute;
     top: 50%;
     left: 50%;
-    margin-top: -20px; /* Центрирование */
-    margin-left: -20px; /* Центрирование */
+    margin-top: -20px;
+    margin-left: -20px;
     z-index: 10;
 }
 
@@ -115,16 +114,16 @@ h1 {
 
 /* Контейнер для кнопок категорий */
 .category-buttons-container {
-    margin-top: 30px; /* Отступ от предпросмотра */
+    margin-top: 30px;
     width: 100%;
     display: flex;
-    flex-wrap: wrap; /* Позволяем кнопкам переноситься на новую строку */
-    justify-content: space-around; /* Распределяем кнопки равномерно */
-    gap: 10px; /* Отступ между кнопками */
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
 }
 
-.category-button, .modal-button { /* Объединяем стили, если выглядят одинаково */
-    background-color: #6c757d; /* Серый цвет для кнопок категорий */
+.category-button {
+    background-color: #6c757d;
     color: white;
     padding: 12px 10px;
     border: none;
@@ -132,12 +131,11 @@ h1 {
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    flex: 1 1 calc(50% - 10px); /* 2 кнопки в ряд с отступом */
-    max-width: calc(50% - 10px); /* Ограничение ширины для 2 кнопок в ряд */
+    width: 100%; /* Кнопки теперь на всю ширину */
     box-sizing: border-box;
 }
 
-.category-button:hover, .modal-button:hover {
+.category-button:hover {
     background-color: #5a6268;
 }
 
@@ -151,10 +149,10 @@ h1 {
 }
 
 .header h2 {
-    margin: 0 auto; /* Центрирует заголовок */
-    flex-grow: 1; /* Заголовок занимает оставшееся пространство */
+    margin: 0 auto;
+    flex-grow: 1;
     text-align: center;
-    padding-right: 50px; /* Компенсируем ширину кнопки "Назад" */
+    padding-right: 50px;
 }
 
 .back-button {
@@ -176,14 +174,14 @@ h1 {
 .advice-buttons-container {
     width: 100%;
     display: flex;
-    flex-direction: column; /* Кнопки одна под другой */
+    flex-direction: column;
     gap: 10px;
     margin-top: 10px;
 }
 
 /* Кнопки советов */
 .advice-button {
-    background-color: #28a745; /* Зеленый цвет для советов */
+    background-color: #28a745;
     color: white;
     padding: 12px 15px;
     border: none;
@@ -218,9 +216,9 @@ h1 {
 @media (max-width: 600px) {
     .container {
         padding: 15px;
-        min-height: 100vh; /* На мобильных устройствах пусть контейнер занимает всю высоту */
-        border-radius: 0; /* Убираем скругление углов на весь экран */
-        box-shadow: none; /* Убираем тень */
+        min-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .upload-button {
@@ -228,12 +226,7 @@ h1 {
         font-size: 15px;
     }
 
-    .category-button {
-        flex: 1 1 100%; /* Каждая кнопка на всю ширину на маленьких экранах */
-        max-width: 100%;
-    }
-
     .header h2 {
-        font-size: 1.2em; /* Чуть уменьшим размер заголовка */
+        font-size: 1.2em;
     }
 }
