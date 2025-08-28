@@ -9,6 +9,12 @@ const previewImage = document.getElementById('previewImage');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
 
+// ЭЛЕМЕНТЫ ДЛЯ СИММЕТРИИ
+const symmetryResultsContainer = document.getElementById('symmetryResultsContainer');
+const symmetryIndexDisplay = document.getElementById('symmetryIndex');
+const symmetryDescriptionDisplay = document.getElementById('symmetryDescription');
+
+
 const advicePageTitle = document.getElementById('advicePageTitle');
 const adviceButtonsContainer = document.getElementById('adviceButtonsContainer');
 
@@ -44,7 +50,7 @@ const adviceData = {
 };
 
 let currentCategory = ''; // Для отслеживания текущей категории советов
-let processedImageUrl = "#"; // Новая переменная для хранения URL обработанного изображения
+let processedImageUrl = "#"; // Переменная для хранения URL обработанного изображения
 
 // --- Функции навигации ---
 function showPage(pageElement) {
@@ -61,12 +67,14 @@ function goBackToMainPage() {
         imagePreviewContainer.classList.remove('hidden');
         previewImage.classList.remove('hidden');
         previewImage.src = processedImageUrl; // Восстанавливаем обработанное изображение
+        symmetryResultsContainer.classList.remove('hidden'); // Показываем результаты симметрии
         categoryButtonsContainer.classList.remove('hidden'); // И кнопки категорий
     } else {
-        // Если обработанного фото нет, скрываем предпросмотр и кнопки
+        // Если обработанного фото нет, скрываем все соответствующие элементы
         imagePreviewContainer.classList.add('hidden');
         previewImage.classList.add('hidden');
         previewImage.src = "#";
+        symmetryResultsContainer.classList.add('hidden'); // Скрываем результаты симметрии
         categoryButtonsContainer.classList.add('hidden');
     }
     loadingIndicator.classList.add('hidden'); // Убедимся, что спиннер скрыт
@@ -85,26 +93,20 @@ imageUploadInput.addEventListener('change', async function(event) {
     const file = event.target.files[0];
 
     if (file) {
-        // 1. Показываем контейнер предпросмотра
+        // 1. Показываем контейнер предпросмотра и скрываем все остальное
         imagePreviewContainer.classList.remove('hidden');
-        // 2. Скрываем изображение, показываем спиннер загрузки
         previewImage.classList.add('hidden');
         loadingIndicator.classList.remove('hidden');
-        categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий
+        categoryButtonsContainer.classList.add('hidden');
+        symmetryResultsContainer.classList.add('hidden'); // Скрываем результаты симметрии при новой загрузке
 
-        // Очищаем предыдущее обработанное изображение, пока идет загрузка нового
+        // Очищаем предыдущее обработанное изображение и данные симметрии
         processedImageUrl = "#";
         previewImage.src = "#";
+        symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
+        symmetryDescriptionDisplay.textContent = "";
 
-        // 3. (Опционально) Отображаем загруженное фото на фронтенде сразу, если нужно
-        // const reader = new FileReader();
-        // reader.onload = function(e) {
-        //     previewImage.src = e.target.result;
-        //     previewImage.classList.remove('hidden');
-        // };
-        // reader.readAsDataURL(file);
-
-        // 4. Отправляем фото на бэкенд для обработки
+        // 2. Отправляем фото на бэкенд для обработки
         const formData = new FormData();
         formData.append('image', file);
 
@@ -115,48 +117,61 @@ imageUploadInput.addEventListener('change', async function(event) {
             });
 
             if (response.ok) {
-                const blob = await response.blob();
-                const imageUrl = URL.createObjectURL(blob);
+                const result = await response.json(); // Ожидаем JSON-ответ
 
-                processedImageUrl = imageUrl; // Сохраняем URL обработанного изображения
-                previewImage.src = imageUrl; // Отображаем обработанное изображение
+                // Обработанное изображение
+                const imageUrl = `data:image/jpeg;base64,${result.processed_image}`;
+                processedImageUrl = imageUrl;
+                previewImage.src = imageUrl;
 
-                previewImage.classList.remove('hidden'); // Показываем изображение
-                loadingIndicator.classList.add('hidden'); // Скрываем спиннер
-                categoryButtonsContainer.classList.remove('hidden'); // Показываем кнопки категорий
+                // Результаты симметрии
+                symmetryIndexDisplay.textContent = `Индекс симметрии: ${result.symmetry_index}%`;
+                symmetryDescriptionDisplay.textContent = result.symmetry_description;
+
+                previewImage.classList.remove('hidden');
+                loadingIndicator.classList.add('hidden');
+                symmetryResultsContainer.classList.remove('hidden'); // Показываем результаты симметрии
+                categoryButtonsContainer.classList.remove('hidden');
             } else {
                 const errorData = await response.json();
                 console.error('Ошибка при обработке изображения:', errorData.error);
                 alert('Ошибка при обработке изображения: ' + errorData.error);
-                // В случае ошибки скрываем все и возвращаемся к исходному состоянию
-                processedImageUrl = "#"; // Сбрасываем URL
-                previewImage.src = "#";
-                previewImage.classList.add('hidden');
-                loadingIndicator.classList.add('hidden');
-                imagePreviewContainer.classList.add('hidden');
+                // В случае ошибки скрываем все
+                resetMainPageState();
             }
         } catch (error) {
             console.error('Произошла ошибка сети или сервера:', error);
             alert('Не удалось связаться с сервером. Пожалуйста, убедитесь, что бэкенд запущен, и попробуйте еще раз.');
-            // В случае ошибки скрываем все и возвращаемся к исходному состоянию
-            processedImageUrl = "#"; // Сбрасываем URL
-            previewImage.src = "#";
-            previewImage.classList.add('hidden');
-            loadingIndicator.classList.add('hidden');
-            imagePreviewContainer.classList.add('hidden');
+            // В случае ошибки скрываем все
+            resetMainPageState();
         }
 
     } else {
         // Если файл не выбран, скрываем предпросмотр, если нет обработанного фото
+        // Иначе сохраняем текущее состояние с обработанным фото
         if (processedImageUrl === "#") {
-            imagePreviewContainer.classList.add('hidden');
-            previewImage.src = "#";
+            resetMainPageState();
+        } else {
+            // Если было обработанное фото и пользователь отменил выбор нового,
+            // просто возвращаем отображение старого и кнопок
+            goBackToMainPage();
         }
-        previewImage.classList.add('hidden'); // Скрываем, если выбирали, но отменили
-        loadingIndicator.classList.add('hidden');
-        categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки, так как нет нового фото для обработки
     }
 });
+
+// Вспомогательная функция для сброса состояния главной страницы
+function resetMainPageState() {
+    processedImageUrl = "#";
+    previewImage.src = "#";
+    previewImage.classList.add('hidden');
+    loadingIndicator.classList.add('hidden');
+    imagePreviewContainer.classList.add('hidden');
+    symmetryResultsContainer.classList.add('hidden');
+    categoryButtonsContainer.classList.add('hidden');
+    symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
+    symmetryDescriptionDisplay.textContent = "";
+}
+
 
 // --- Обработчик кликов по кнопкам категорий (Разум, Тело, Лицо, ?) ---
 categoryButtonsContainer.addEventListener('click', (event) => {
@@ -171,7 +186,7 @@ function showAdviceList(category) {
     showPage(advicePage);
     // Капитализация первой буквы для заголовка
     advicePageTitle.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ' Советы';
-    adviceButtonsContainer.innerHTML = ''; // Очищаем предыдущие кнопки
+    adviceButtonsContainer.innerHTML = '';
 
     const advices = adviceData[category];
     if (advices) {
@@ -179,7 +194,7 @@ function showAdviceList(category) {
             const button = document.createElement('button');
             button.classList.add('advice-button');
             button.textContent = advice.title;
-            button.dataset.index = index; // Сохраняем индекс для доступа к данным
+            button.dataset.index = index;
             button.addEventListener('click', () => showTipDetail(category, index));
             adviceButtonsContainer.appendChild(button);
         });
@@ -196,17 +211,8 @@ function showTipDetail(category, index) {
 
 // Инициализация: убедимся, что при загрузке страницы видна только основная страница
 document.addEventListener('DOMContentLoaded', () => {
-    // При старте приложения нужно убедиться, что все скрыто
-    // и показана только кнопка загрузки.
-    mainPage.classList.remove('hidden'); // Показываем главную страницу
+    mainPage.classList.remove('hidden');
     advicePage.classList.add('hidden');
     tipDetailPage.classList.add('hidden');
-
-    imagePreviewContainer.classList.add('hidden'); // Скрываем контейнер предпросмотра
-    previewImage.classList.add('hidden'); // Скрываем изображение
-    loadingIndicator.classList.add('hidden'); // Скрываем спиннер
-    categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий
-
-    // Сбрасываем URL, чтобы при первой загрузке не было старого изображения
-    processedImageUrl = "#";
+    resetMainPageState(); // Сбрасываем все состояние при старте
 });

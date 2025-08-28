@@ -1,31 +1,31 @@
 import os
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import cv2
 import numpy as np
 from pathlib import Path
 import io
-import torch  # Добавлено для проверки доступности CUDA, если необходимо
+import base64
+import torch
 
 # --- Project Root Definition ---
 current_file = Path(__file__).resolve()
-# Assuming main.py is in src/server/, so PROJECT_ROOT is 2 levels up
 PROJECT_ROOT = current_file.parent.parent.parent
 
-# Import your utility functions
-# Убедитесь, что папка utils является пакетом (содержит __init__.py)
+# Import your original utility functions
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
-from utils.utils_landmarks import show_landmarks_return_img  # Используем нашу новую функцию
+# Import new utility functions
+from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry
+from utils.utils_landmarks import \
+    get_five_landmarks_from_net  # Возможно, понадобится для calculate_symmetry_index напрямую
 
 app = Flask(__name__)
-CORS(app)  # Включаем CORS для всех доменов
+CORS(app)
 
-# Добавьте пустой __init__.py в папку src/server/utils/, если его там еще нет
-# Это необходимо, чтобы Python рассматривал utils как пакет.
+# Убедитесь, что папка utils является пакетом (содержит __init__.py)
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
 
-# --- Global Model Loading (Оптимизация: загружаем модель один раз) ---
-# Это поможет избежать повторной медленной загрузки модели при каждом запросе
+# --- Global Model Loading ---
 face_alignment_model = None
 
 
@@ -39,15 +39,11 @@ def load_face_model():
             app.logger.info("Face alignment model loaded successfully.")
         except Exception as e:
             app.logger.error(f"Failed to load face alignment model: {e}")
-            raise  # Перевыбрасываем исключение, так как без модели работать нельзя
+            raise
 
 
-# --- Flask Routes ---
 @app.before_request
 def before_first_request():
-    # Загружаем модель при первом запросе (или при старте приложения, если нужно)
-    # Для Gunicorn/WSGI серверов лучше загружать модель глобально при старте процесса
-    # Но для app.run() в debug режиме это нормально.
     if face_alignment_model is None:
         load_face_model()
 
@@ -68,7 +64,6 @@ def process_image():
 
     if file:
         try:
-            # Read the image file directly into OpenCV
             in_memory_file = io.BytesIO()
             file.save(in_memory_file)
             data = np.frombuffer(in_memory_file.getvalue(), dtype=np.uint8)
@@ -77,19 +72,32 @@ def process_image():
             if img is None:
                 return jsonify({"error": "Could not decode image. Is it a valid image format?"}), 400
 
-            # --- Image Processing Logic ---
-            # Используем глобально загруженную модель
             if face_alignment_model is None:
                 raise Exception("Face alignment model is not loaded. Server might have failed to initialize.")
 
-            lmks = get_lmks_by_img(face_alignment_model, img)  # Передаем уже загруженную модель
+            # Получаем все ключевые точки
+            all_lmks = get_lmks_by_img(face_alignment_model, img)
 
-            # Use the new function to get the processed image stream
-            processed_image_stream = show_landmarks_return_img(img, lmks)
+            # Рассчитываем индекс симметрии, используя полный набор точек
+            symmetry_index = calculate_symmetry_index(all_lmks)
 
-            # Send the processed image back
-            processed_image_stream.seek(0)  # Сбрасываем указатель на начало потока
-            return send_file(processed_image_stream, mimetype='image/jpeg')
+            # Получаем обработанное изображение с точками и линиями симметрии
+            processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
+            processed_image_stream.seek(0)
+
+            # Кодируем изображение в base64 для передачи в JSON
+            encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
+
+            # Возвращаем JSON-ответ
+            return jsonify({
+                "processed_image": encoded_image,
+                "symmetry_index": symmetry_index,
+                "symmetry_description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
+                                        ("Великолепная симметрия!" if symmetry_index > 90 else
+                                         "Высокая симметрия." if symmetry_index > 75 else
+                                         "Хорошая симметрия." if symmetry_index > 50 else
+                                         "Есть заметные отклонения в симметрии.")
+            })
 
         except Exception as e:
             app.logger.error(f"Error processing image: {e}")
@@ -100,9 +108,5 @@ def process_image():
 
 
 if __name__ == '__main__':
-    # Оптимизация: Загрузка модели при старте приложения, а не при первом запросе
-    # Это важно, если используется Gunicorn или другой WSGI-сервер
-    # Для разработки с app.run(debug=True) может быть достаточно before_first_request
-    # Но для продакшена лучше загружать тут.
     load_face_model()
     app.run(debug=True, host='0.0.0.0', port=5000)
