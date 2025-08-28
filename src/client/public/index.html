@@ -29,12 +29,18 @@
                 <p id="loadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
             </div>
 
+            <!-- Подсказка для увеличения изображения -->
+            <p id="zoomHint" class="zoom-hint hidden">Нажмите на фото, чтобы увеличить</p>
+
+            <!-- КНОПКА СКАЧИВАНИЯ - ПЕРЕМЕЩЕНА СЮДА -->
+            <button id="downloadImageButton" class="download-button hidden">Скачать изображение</button>
+
+
             <!-- Контейнер для результатов симметрии -->
             <div id="symmetryResultsContainer" class="symmetry-results-container hidden">
                 <h3>Анализ симметрии:</h3>
                 <p id="symmetryIndex">Индекс симметрии: --%</p>
                 <p id="symmetryDescription"></p>
-                <!-- НОВОЕ: Описание линий теперь статично в HTML -->
                 <div id="symmetryLinesDescriptionContainer" class="symmetry-lines-description-container">
                     <h4>Пояснение к линиям:</h4>
                     <ul id="symmetryLinesList">
@@ -76,6 +82,14 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Модальное окно для приближения изображения -->
+    <div id="imageZoomModal" class="modal hidden">
+        <div class="modal-content-zoom">
+            <span class="close-button" id="closeZoomModal">&times;</span>
+            <img id="zoomedImage" src="#" alt="Увеличенное изображение">
+        </div>
     </div>
 
     <script src="script.js"></script>
