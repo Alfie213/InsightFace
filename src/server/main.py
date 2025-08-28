@@ -96,31 +96,28 @@ def process_image():
         if face_alignment_model is None or face_cascade is None:
             raise Exception("Models are not loaded. Server might have failed to initialize.")
 
-        # --- НОВАЯ СЕРВЕРНАЯ ВАЛИДАЦИЯ: ОБНАРУЖЕНИЕ ЛИЦА С ПОМОЩЬЮ HAAR CASCADE ---
+        # --- ОБНАРУЖЕНИЕ ЛИЦА С ПОМОЩЬЮ HAAR CASCADE ---
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         if len(faces) == 0:
-            # Лицо не обнаружено с помощью Haar Cascade
-            # ИЗМЕНЕНИЕ: Кодируем numpy.ndarray в JPEG байты перед base64
             is_success, buffer = cv2.imencode(".jpg", img)
             if not is_success:
                 raise Exception("Could not encode original image to JPEG for error response.")
-            encoded_original_image = base64.b64encode(buffer).decode('utf-8')  # Использование `buffer` напрямую
+            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
 
             return jsonify({
                 "error": "Лицо не обнаружено на изображении. Пожалуйста, попробуйте другую фотографию (убедитесь, что лицо хорошо видно).",
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
-                "symmetry_description": "Лицо не обнаружено для анализа симметрии."
+                "symmetry_description": "Лицо не обнаружено для анализа симметрии.",
+                # "symmetry_lines_description": [] # УДАЛЕНО
             }), 422
 
             # Получаем все ключевые точки от WFLW модели
         all_lmks = get_lmks_by_img(face_alignment_model, img)
 
-        # Дополнительная проверка: если WFLW все равно ничего не нашла
         if all_lmks is None or len(all_lmks) == 0:
-            # ИЗМЕНЕНИЕ: Кодируем numpy.ndarray в JPEG байты перед base64
             is_success, buffer = cv2.imencode(".jpg", img)
             if not is_success:
                 raise Exception("Could not encode original image to JPEG for error response.")
@@ -130,28 +127,26 @@ def process_image():
                 "error": "Лицо обнаружено, но модель для ключевых точек не смогла его обработать. Пожалуйста, попробуйте другую фотографию.",
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
-                "symmetry_description": "Модель ключевых точек не смогла обработать лицо."
+                "symmetry_description": "Модель ключевых точек не смогла обработать лицо.",
+                # "symmetry_lines_description": [] # УДАЛЕНО
             }), 422
 
-            # Рассчитываем индекс симметрии
-        symmetry_index = calculate_symmetry_index(all_lmks)
+        symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
 
-        # Получаем обработанное изображение с точками и линиями симметрии
         processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
         processed_image_stream.seek(0)
 
-        # Кодируем изображение в base64 для передачи в JSON
         encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
 
-        # Возвращаем JSON-ответ
         return jsonify({
             "processed_image": encoded_image,
             "symmetry_index": symmetry_index,
             "symmetry_description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
-                                    ("Великолепная симметрия!" if symmetry_index > 90 else
-                                     "Высокая симметрия." if symmetry_index > 75 else
-                                     "Хорошая симметрия." if symmetry_index > 50 else
-                                     "Есть заметные отклонения в симметрии.")
+                                    ("Великолепная симметрия! Ваше лицо очень гармонично." if symmetry_index > 90 else
+                                     "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
+                                     "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
+                                     "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали."),
+            # "symmetry_lines_description": symmetry_lines_description # УДАЛЕНО
         })
 
     except Exception as e:

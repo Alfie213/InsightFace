@@ -1,83 +1,67 @@
 import cv2
 import numpy as np
 import io
-from .utils_landmarks import set_circles_on_img, \
-    get_five_landmarks_from_net  # Импортируем нужные функции из оригинального файла
+from .utils_landmarks import set_circles_on_img, get_five_landmarks_from_net
 
 
-def calculate_symmetry_index(all_lmks):
+def calculate_symmetry_index(all_lmks, img_width=1):
     """
-    Рассчитывает простой индекс симметрии лица на основе 5 ключевых точек.
+    Рассчитывает улучшенный индекс симметрии лица на основе 5 ключевых точек.
+    Использует отклонение симметричных точек от центральной оси.
 
     :param all_lmks: Полный набор ключевых точек, возвращаемых моделью (например, 98 точек).
+    :param img_width: Ширина изображения для нормализации расстояний.
     :return: Процент симметрии (от 0 до 100).
     """
     if all_lmks is None or len(all_lmks) == 0:
-        return 0.0  # Невозможно рассчитать без точек
+        return 0.0
 
-    # Извлекаем 5 основных точек для симметрии
     try:
         five_lmks = get_five_landmarks_from_net(all_lmks)
     except NotImplementedError:
-        # Если get_five_landmarks_from_net не поддерживает текущее количество точек,
-        # можно попробовать взять первые 5 или реализовать специфичную логику.
-        # Для демонстрации, если не удается, вернем 0.
         print(
             f"Warning: get_five_landmarks_from_net does not support {len(all_lmks)} landmarks for symmetry calculation.")
         return 0.0
 
     if len(five_lmks) < 5:
-        return 0.0  # Недостаточно точек для расчета
+        return 0.0
 
-    # five_lmks: [левый глаз, правый глаз, нос, левый уголок рта, правый уголок рта]
+    le, re, nose, ml, mr = five_lmks[0], five_lmks[1], five_lmks[2], five_lmks[3], five_lmks[4]
 
-    # 1. Определение центральной вертикальной оси
-    # Возьмем среднее по X для всех 5 точек или X носа
-    center_x = five_lmks[2][0]  # X-координата носа как центральная ось
+    center_x = (le[0] + re[0]) / 2
 
-    # 2. Отклонения X-координат от центральной оси
-    # Отклонение по горизонтали: (левый глаз - центр) vs (центр - правый глаз)
-    dev_le_x = abs(five_lmks[0][0] - center_x)
-    dev_re_x = abs(five_lmks[1][0] - center_x)
-    dev_lm_x = abs(five_lmks[3][0] - center_x)
-    dev_rm_x = abs(five_lmks[4][0] - center_x)
+    dist_le_x = abs(le[0] - center_x)
+    dist_re_x = abs(re[0] - center_x)
+    dist_ml_x = abs(ml[0] - center_x)
+    dist_mr_x = abs(mr[0] - center_x)
 
-    # Разница в отклонениях
-    diff_eyes_x = abs(dev_le_x - dev_re_x)
-    diff_mouth_x = abs(dev_lm_x - dev_rm_x)
+    diff_eyes_x = abs(dist_le_x - dist_re_x)
+    diff_mouth_x = abs(dist_ml_x - dist_mr_x)
 
-    # 3. Отклонения Y-координат (вертикальное выравнивание симметричных точек)
-    # Разница Y-координат между левым и правым глазом
-    diff_eyes_y = abs(five_lmks[0][1] - five_lmks[1][1])
-    # Разница Y-координат между левым и правым уголком рта
-    diff_mouth_y = abs(five_lmks[3][1] - five_lmks[4][1])
+    avg_x_deviation = (diff_eyes_x + diff_mouth_x) / 2
 
-    # 4. Нормализация отклонений
-    # Используем расстояние между глазами для нормализации, так как это хороший масштаб для лица
-    eye_distance = np.linalg.norm(five_lmks[0] - five_lmks[1])
+    y_diff_eyes = abs(le[1] - re[1])
+    y_diff_mouth = abs(ml[1] - mr[1])
+
+    avg_y_deviation = (y_diff_eyes + y_diff_mouth) / 2
+
+    eye_distance = np.linalg.norm(le - re)
     if eye_distance == 0:
-        return 0.0  # Избегаем деления на ноль
+        return 0.0
 
-    normalized_x_deviation = (diff_eyes_x + diff_mouth_x) / (2 * eye_distance)
-    normalized_y_deviation = (diff_eyes_y + diff_mouth_y) / (2 * eye_distance)  # Разница Y между симметричными точками
+    normalized_total_deviation = (avg_x_deviation + avg_y_deviation) / eye_distance
 
-    total_deviation_score = normalized_x_deviation + normalized_y_deviation
+    max_deviation_threshold = 0.4
 
-    # 5. Преобразование в процент симметрии
-    # Чем меньше total_deviation_score, тем выше симметрия.
-    # Простая линейная шкала: 0 отклонение = 100% симметрии. Макс. отклонение = 0% симметрии.
-    # Нужно откалибровать max_permissible_deviation для вашей модели
-    max_permissible_deviation = 0.5  # Это примерное значение, возможно, потребуется калибровка
-
-    symmetry_percentage = max(0, 100 - (total_deviation_score / max_permissible_deviation) * 100)
+    symmetry_percentage = max(0, 100 - (normalized_total_deviation / max_deviation_threshold) * 100)
 
     return round(symmetry_percentage, 2)
 
 
 def process_image_with_landmarks_and_symmetry(img, all_lmks, circle_size=3, color=(255, 0, 0), is_copy=True):
     """
-    Plots landmarks and a central symmetry line on the image, then returns
-    the modified image as a JPEG byte stream.
+    Plots landmarks, a central symmetry line, horizontal alignment lines,
+    and deviation lines on the image.
 
     :param img: Source image (numpy array).
     :param all_lmks: All landmarks detected by the model.
@@ -86,22 +70,92 @@ def process_image_with_landmarks_and_symmetry(img, all_lmks, circle_size=3, colo
     :param is_copy: If True, plot on a copy of the image.
     :return: Bytes of the processed image in JPEG format.
     """
-    processed_img = set_circles_on_img(img, all_lmks, circle_size=circle_size, color=color, is_copy=is_copy)
+    processed_img = img.copy() if is_copy else img
 
+    # --- ДИНАМИЧЕСКИЙ РАСЧЕТ ТОЛЩИНЫ ЛИНИЙ ---
+    min_dim = min(processed_img.shape[0], processed_img.shape[1])
+
+    # Увеличены коэффициенты для более заметных линий
+    # base_thickness = max(1, min_dim // 300) # ИЗМЕНЕНИЕ: Сделаем 1px на каждые 300px
+    # Landmark circle size: 1px for every 100-150px
+    # Line thickness: 1px for every 200-300px
+
+    # Можно использовать более агрессивные значения для заметности
+    base_thickness_factor = 250  # 1px на каждые 250px минимального размера
+    landmark_size_factor = 100  # 1px на каждые 100px минимального размера
+
+    calculated_base_thickness = max(1, min_dim // base_thickness_factor)
+
+    central_line_thickness = max(3, calculated_base_thickness * 2)  # Минимум 3px, масштабируется
+    horizontal_line_thickness = max(2, calculated_base_thickness)  # Минимум 2px, масштабируется
+    deviation_line_thickness = max(2, calculated_base_thickness)  # Минимум 2px, масштабируется
+    landmark_circle_size = max(3, min_dim // landmark_size_factor)  # Минимум 3px, масштабируется
+
+    # Рисуем ключевые точки (с динамическим размером)
     if all_lmks is not None and len(all_lmks) > 0:
+        processed_img = set_circles_on_img(processed_img, all_lmks, circle_size=landmark_circle_size, color=color,
+                                           is_copy=False)
+
         try:
             five_lmks = get_five_landmarks_from_net(all_lmks)
-            if len(five_lmks) >= 3:  # Убедимся, что есть хотя бы нос
-                nose_x = int(five_lmks[2][0])  # X-координата носа
-                # Рисуем вертикальную центральную линию симметрии
-                cv2.line(processed_img, (nose_x, 0), (nose_x, processed_img.shape[0]), (0, 255, 255), 2)  # Желтая линия
+            if len(five_lmks) >= 5:
+                le, re, nose, ml, mr = five_lmks[0], five_lmks[1], five_lmks[2], five_lmks[3], five_lmks[4]
+
+                # --- 1. Центральная Вертикальная Линия (Желтая) ---
+                center_x_axis = int((le[0] + re[0]) / 2)
+                cv2.line(processed_img, (center_x_axis, 0), (center_x_axis, processed_img.shape[0]), (0, 255, 255),
+                         central_line_thickness)
+
+                # --- 2. Горизонтальные Линии для Сравнения Уровней (Оранжевые) ---
+                avg_eye_y = int((le[1] + re[1]) / 2)
+                cv2.line(processed_img, (int(le[0]), avg_eye_y), (int(re[0]), avg_eye_y), (0, 165, 255),
+                         horizontal_line_thickness)
+
+                avg_mouth_y = int((ml[1] + mr[1]) / 2)
+                # ИЗМЕНЕНИЕ: avg_mouth[1] -> avg_mouth_y для консистентности
+                cv2.line(processed_img, (int(ml[0]), avg_mouth_y), (int(mr[0]), avg_mouth_y), (0, 165, 255),
+                         horizontal_line_thickness)
+
+                # --- 3. Линии Отклонения от "Идеальной" Симметрии (Красные) ---
+                deviation_color = (0, 0, 255)  # Красный цвет
+
+                # Для левого глаза
+                ideal_le_x = center_x_axis - (re[0] - center_x_axis)
+                cv2.line(processed_img, (int(le[0]), int(le[1])), (int(ideal_le_x), int(le[1])), deviation_color,
+                         deviation_line_thickness)
+                cv2.line(processed_img, (int(le[0]), int(le[1])), (int(le[0]), int(re[1])), deviation_color,
+                         deviation_line_thickness)
+
+                # Для правого глаза
+                ideal_re_x = center_x_axis + (center_x_axis - le[0])
+                cv2.line(processed_img, (int(re[0]), int(re[1])), (int(ideal_re_x), int(re[1])), deviation_color,
+                         deviation_line_thickness)
+                cv2.line(processed_img, (int(re[0]), int(re[1])), (int(re[0]), int(le[1])), deviation_color,
+                         deviation_line_thickness)
+
+                # Для левого уголка рта
+                ideal_ml_x = center_x_axis - (mr[0] - center_x_axis)
+                cv2.line(processed_img, (int(ml[0]), int(ml[1])), (int(ideal_ml_x), int(ml[1])), deviation_color,
+                         deviation_line_thickness)
+                cv2.line(processed_img, (int(ml[0]), int(ml[1])), (int(ml[0]), int(mr[1])), deviation_color,
+                         deviation_line_thickness)
+
+                # Для правого уголка рта
+                ideal_mr_x = center_x_axis + (center_x_axis - ml[0])
+                cv2.line(processed_img, (int(mr[0]), int(mr[1])), (int(ideal_mr_x), int(mr[1])), deviation_color,
+                         deviation_line_thickness)
+                cv2.line(processed_img, (int(mr[0]), int(mr[1])), (int(mr[0]), int(ml[1])), deviation_color,
+                         deviation_line_thickness)
+
+
         except NotImplementedError:
             print(
-                f"Warning: Cannot draw symmetry line for {len(all_lmks)} landmarks without `get_five_landmarks_from_net` support.")
+                f"Warning: Cannot draw symmetry lines for {len(all_lmks)} landmarks without `get_five_landmarks_from_net` support.")
         except IndexError:
-            print("Warning: Not enough landmarks to draw symmetry line (e.g., nose not detected).")
+            print("Warning: Not enough landmarks to draw symmetry lines (e.g., nose not detected).")
+        except Exception as e:
+            print(f"Error drawing symmetry lines: {e}")
 
-    # Encode the image to JPEG format in memory
     is_success, buffer = cv2.imencode(".jpg", processed_img)
     if not is_success:
         raise Exception("Could not encode image to JPEG.")

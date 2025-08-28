@@ -7,17 +7,18 @@ const imageUploadInput = document.getElementById('imageUpload');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 const previewImage = document.getElementById('previewImage');
 const loadingIndicator = document.getElementById('loadingIndicator');
-const loadingMessage = document.getElementById('loadingMessage'); // НОВОЕ: Ссылка на элемент сообщения о загрузке
+const loadingMessage = document.getElementById('loadingMessage');
 const categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
 
 // ЭЛЕМЕНТЫ ДЛЯ СООБЩЕНИЙ ОБ ОШИБКАХ
 const errorMessageContainer = document.getElementById('errorMessageContainer');
 const errorMessageText = document.getElementById('errorMessageText');
 
-// ЭЛЕМЕНТЫ ДЛЯ СИММЕТРИИ
+// ЭЛЕМЕНТЫ ДЛЯ СИММЕТРИИ (теперь управляем видимостью только symmetryResultsContainer)
 const symmetryResultsContainer = document.getElementById('symmetryResultsContainer');
 const symmetryIndexDisplay = document.getElementById('symmetryIndex');
 const symmetryDescriptionDisplay = document.getElementById('symmetryDescription');
+// УДАЛЕНО: ссылки на symmetryLinesDescriptionContainer и symmetryLinesList, так как они теперь статичны.
 
 
 const advicePageTitle = document.getElementById('advicePageTitle');
@@ -87,8 +88,7 @@ function goBackToMainPage() {
         previewImage.classList.remove('hidden');
         previewImage.src = processedImageUrl;
         categoryButtonsContainer.classList.remove('hidden');
-        // Если изображение было обработано успешно, показываем и результаты симметрии
-        symmetryResultsContainer.classList.remove('hidden');
+        symmetryResultsContainer.classList.remove('hidden'); // Показываем весь контейнер с результатами
     } else {
         imagePreviewContainer.classList.add('hidden');
         previewImage.classList.add('hidden');
@@ -97,7 +97,7 @@ function goBackToMainPage() {
         symmetryResultsContainer.classList.add('hidden');
     }
     loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
+    loadingMessage.classList.add('hidden');
 }
 
 function goBackToAdvicePage() {
@@ -111,48 +111,45 @@ function goBackToAdvicePage() {
 imageUploadInput.addEventListener('change', async function(event) {
     console.log("Событие 'change' сработало.");
     const file = event.target.files[0];
-    hideErrorMessage(); // Скрываем любое предыдущее сообщение об ошибке при новой попытке загрузки
+    hideErrorMessage();
 
-    // При начале загрузки сбрасываем состояние предпросмотра, но сохраняем обработанное фото
-    // на случай, если пользователь отменит выбор
     if (processedImageUrl === "#") {
-         imagePreviewContainer.classList.add('hidden'); // Скрываем предпросмотр
+         imagePreviewContainer.classList.add('hidden');
          previewImage.classList.add('hidden');
     }
     loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
+    loadingMessage.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
-    symmetryResultsContainer.classList.add('hidden');
+    symmetryResultsContainer.classList.add('hidden'); // Скрываем весь контейнер с результатами
 
     if (file) {
         console.log("Файл выбран:", file.name, "Тип:", file.type, "Размер:", file.size, "байт");
         // --- КЛИЕНТСКАЯ ВАЛИДАЦИЯ ---
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        const maxSizeMB = 5; // Максимальный размер файла в MB
+        const maxSizeMB = 5;
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
         if (!allowedTypes.includes(file.type)) {
             showErrorMessage(`Неподдерживаемый тип файла. Пожалуйста, загрузите изображение в формате JPG, PNG или GIF.`);
-            event.target.value = ''; // Очищаем выбранный файл
-            resetMainPageStateAfterError(); // НОВАЯ ФУНКЦИЯ для сброса после ошибки
+            event.target.value = '';
+            resetMainPageStateAfterError();
             return;
         }
 
         if (file.size > maxSizeBytes) {
             showErrorMessage(`Файл слишком большой. Максимальный размер файла: ${maxSizeMB} MB.`);
-            event.target.value = ''; // Очищаем выбранный файл
-            resetMainPageStateAfterError(); // НОВАЯ ФУНКЦИЯ для сброса после ошибки
+            event.target.value = '';
+            resetMainPageStateAfterError();
             return;
         }
         // --- КОНЕЦ КЛИЕНТСКОЙ ВАЛИДАЦИИ ---
 
         // Если валидация прошла, показываем спиннер и сообщение о загрузке
         imagePreviewContainer.classList.remove('hidden');
-        loadingIndicator.classList.remove('hidden'); // Показываем спиннер
+        loadingIndicator.classList.remove('hidden');
         loadingMessage.classList.remove('hidden'); // Показываем сообщение о загрузке
         previewImage.classList.add('hidden');
 
-        // Очищаем предыдущее обработанное изображение и данные симметрии
         processedImageUrl = "#";
         previewImage.src = "#";
         symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
@@ -180,8 +177,8 @@ imageUploadInput.addEventListener('change', async function(event) {
 
                 previewImage.classList.remove('hidden');
                 loadingIndicator.classList.add('hidden');
-                loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
-                symmetryResultsContainer.classList.remove('hidden');
+                loadingMessage.classList.add('hidden');
+                symmetryResultsContainer.classList.remove('hidden'); // Показываем весь контейнер с результатами
                 categoryButtonsContainer.classList.remove('hidden');
             } else {
                 const errorData = await response.json();
@@ -195,12 +192,12 @@ imageUploadInput.addEventListener('change', async function(event) {
                     previewImage.classList.remove('hidden');
                     imagePreviewContainer.classList.remove('hidden');
 
-                    symmetryResultsContainer.classList.add('hidden');
+                    symmetryResultsContainer.classList.add('hidden'); // Скрываем, если лицо не найдено
                 } else {
                     resetMainPageStateAfterError();
                 }
                 loadingIndicator.classList.add('hidden');
-                loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
+                loadingMessage.classList.add('hidden');
             }
         } catch (error) {
             console.error('Произошла ошибка сети или сервера:', error);
@@ -224,28 +221,29 @@ function resetMainPageState() {
     previewImage.src = "#";
     previewImage.classList.add('hidden');
     loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
+    loadingMessage.classList.add('hidden');
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+    // symmetryLinesList.innerHTML = ''; // УДАЛЕНО, так как теперь статично
     hideErrorMessage();
 }
 
 // Вспомогательная функция для сброса состояния главной страницы ПОСЛЕ ОШИБКИ
-// Она НЕ скрывает контейнер errorMessageContainer
 function resetMainPageStateAfterError() {
     processedImageUrl = "#";
     previewImage.src = "#";
     previewImage.classList.add('hidden');
     loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
+    loadingMessage.classList.add('hidden');
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+    // symmetryLinesList.innerHTML = ''; // УДАЛЕНО, так как теперь статично
     // НЕ скрываем hideErrorMessage() здесь! Сообщение должно остаться
 }
 
@@ -291,5 +289,5 @@ document.addEventListener('DOMContentLoaded', () => {
     mainPage.classList.remove('hidden');
     advicePage.classList.add('hidden');
     tipDetailPage.classList.add('hidden');
-    resetMainPageState(); // Полный сброс при старте
+    resetMainPageState();
 });

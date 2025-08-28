@@ -26,7 +26,6 @@
             <div id="imagePreviewContainer" class="image-preview-container hidden">
                 <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
                 <div id="loadingIndicator" class="loading-spinner hidden"></div>
-                <!-- НОВАЯ НАДПИСЬ О ЗАГРУЗКЕ -->
                 <p id="loadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
             </div>
 
@@ -35,6 +34,15 @@
                 <h3>Анализ симметрии:</h3>
                 <p id="symmetryIndex">Индекс симметрии: --%</p>
                 <p id="symmetryDescription"></p>
+                <!-- НОВОЕ: Описание линий теперь статично в HTML -->
+                <div id="symmetryLinesDescriptionContainer" class="symmetry-lines-description-container">
+                    <h4>Пояснение к линиям:</h4>
+                    <ul id="symmetryLinesList">
+                        <li><strong>Желтая линия:</strong> Центральная ось симметрии лица, проходящая через середину глаз.</li>
+                        <li><strong>Оранжевые линии:</strong> Горизонтальные линии, показывающие уровень глаз и уголков рта.</li>
+                        <li><strong>Красные линии:</strong> Показывают отклонение черт лица от идеальной симметрии: чем длиннее линия, тем больше отклонение.</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- Контейнер для кнопок категорий (Разум, Тело, Лицо, ?) -->
