@@ -302,6 +302,12 @@ imageZoomModal.addEventListener('click', (event) => {
     }
 });
 
+// Закрытие модального окна при повторном нажатии на увеличенное изображение
+zoomedImage.addEventListener('click', () => {
+    imageZoomModal.classList.add('hidden');
+    document.body.style.overflow = '';
+});
+
 // Скачивание изображения
 downloadImageButton.addEventListener('click', () => {
     if (processedImageUrl !== "#") {
