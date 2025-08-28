@@ -125,7 +125,7 @@ h1 {
     position: absolute;
     top: 50%;
     left: 50%;
-    margin-top: -20px;
+    margin-top: -30px; /* ИЗМЕНЕНИЕ: Смещаем спиннер чуть выше центра */
     margin-left: -20px;
     z-index: 10;
 }
@@ -277,4 +277,15 @@ h1 {
     .header h2 {
         font-size: 1.2em;
     }
+}
+
+.loading-message {
+    position: absolute;
+    top: 50%; /* ИЗМЕНЕНИЕ: Теперь располагаем текст по центру, но смещаем его вниз */
+    left: 50%;
+    transform: translate(-50%, 10px); /* ИЗМЕНЕНИЕ: Центрируем по X, смещаем на 10px вниз по Y */
+    color: #555;
+    font-size: 1.1em;
+    font-weight: bold;
+    z-index: 10;
 }

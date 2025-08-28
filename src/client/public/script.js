@@ -7,6 +7,7 @@ const imageUploadInput = document.getElementById('imageUpload');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 const previewImage = document.getElementById('previewImage');
 const loadingIndicator = document.getElementById('loadingIndicator');
+const loadingMessage = document.getElementById('loadingMessage'); // НОВОЕ: Ссылка на элемент сообщения о загрузке
 const categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
 
 // ЭЛЕМЕНТЫ ДЛЯ СООБЩЕНИЙ ОБ ОШИБКАХ
@@ -53,20 +54,20 @@ const adviceData = {
     ]
 };
 
-let currentCategory = '';
-let processedImageUrl = "#";
+let currentCategory = ''; // Для отслеживания текущей категории советов
+let processedImageUrl = "#"; // Переменная для хранения URL обработанного изображения
 
 // --- Вспомогательная функция для отображения ошибки ---
 function showErrorMessage(message) {
     errorMessageText.textContent = message;
-    errorMessageContainer.classList.remove('hidden'); // Показываем контейнер
+    errorMessageContainer.classList.remove('hidden');
     console.error("Отображено сообщение об ошибке:", message);
 }
 
 // --- Вспомогательная функция для скрытия ошибки ---
 function hideErrorMessage() {
     errorMessageText.textContent = '';
-    errorMessageContainer.classList.add('hidden'); // Скрываем контейнер
+    errorMessageContainer.classList.add('hidden');
 }
 
 // --- Функции навигации ---
@@ -79,7 +80,7 @@ function showPage(pageElement) {
 
 function goBackToMainPage() {
     showPage(mainPage);
-    hideErrorMessage(); // Убедимся, что сообщение об ошибке скрыто при возврате на главную
+    hideErrorMessage();
 
     if (processedImageUrl !== "#") {
         imagePreviewContainer.classList.remove('hidden');
@@ -89,14 +90,14 @@ function goBackToMainPage() {
         // Если изображение было обработано успешно, показываем и результаты симметрии
         symmetryResultsContainer.classList.remove('hidden');
     } else {
-        // Если обработанного фото нет, скрываем все соответствующие элементы
         imagePreviewContainer.classList.add('hidden');
         previewImage.classList.add('hidden');
         previewImage.src = "#";
         categoryButtonsContainer.classList.add('hidden');
-        symmetryResultsContainer.classList.add('hidden'); // И симметрию
+        symmetryResultsContainer.classList.add('hidden');
     }
     loadingIndicator.classList.add('hidden');
+    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
 }
 
 function goBackToAdvicePage() {
@@ -119,14 +120,15 @@ imageUploadInput.addEventListener('change', async function(event) {
          previewImage.classList.add('hidden');
     }
     loadingIndicator.classList.add('hidden');
+    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
     categoryButtonsContainer.classList.add('hidden');
-    symmetryResultsContainer.classList.add('hidden'); // Скрываем симметрию
+    symmetryResultsContainer.classList.add('hidden');
 
     if (file) {
         console.log("Файл выбран:", file.name, "Тип:", file.type, "Размер:", file.size, "байт");
         // --- КЛИЕНТСКАЯ ВАЛИДАЦИЯ ---
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        const maxSizeMB = 5;
+        const maxSizeMB = 5; // Максимальный размер файла в MB
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
         if (!allowedTypes.includes(file.type)) {
@@ -144,10 +146,11 @@ imageUploadInput.addEventListener('change', async function(event) {
         }
         // --- КОНЕЦ КЛИЕНТСКОЙ ВАЛИДАЦИИ ---
 
-        // Если валидация прошла, показываем спиннер
-        imagePreviewContainer.classList.remove('hidden'); // Показываем контейнер предпросмотра
+        // Если валидация прошла, показываем спиннер и сообщение о загрузке
+        imagePreviewContainer.classList.remove('hidden');
         loadingIndicator.classList.remove('hidden'); // Показываем спиннер
-        previewImage.classList.add('hidden'); // Скрываем предыдущее изображение
+        loadingMessage.classList.remove('hidden'); // Показываем сообщение о загрузке
+        previewImage.classList.add('hidden');
 
         // Очищаем предыдущее обработанное изображение и данные симметрии
         processedImageUrl = "#";
@@ -177,6 +180,7 @@ imageUploadInput.addEventListener('change', async function(event) {
 
                 previewImage.classList.remove('hidden');
                 loadingIndicator.classList.add('hidden');
+                loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
                 symmetryResultsContainer.classList.remove('hidden');
                 categoryButtonsContainer.classList.remove('hidden');
             } else {
@@ -193,36 +197,34 @@ imageUploadInput.addEventListener('change', async function(event) {
 
                     symmetryResultsContainer.classList.add('hidden');
                 } else {
-                    resetMainPageStateAfterError(); // НОВАЯ ФУНКЦИЯ
+                    resetMainPageStateAfterError();
                 }
                 loadingIndicator.classList.add('hidden');
+                loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
             }
         } catch (error) {
             console.error('Произошла ошибка сети или сервера:', error);
             showErrorMessage('Не удалось связаться с сервером. Пожалуйста, убедитесь, что бэкенд запущен, и попробуйте еще раз.');
-            resetMainPageStateAfterError(); // НОВАЯ ФУНКЦИЯ
+            resetMainPageStateAfterError();
         }
 
     } else {
         console.log("Файл не выбран или отменен.");
-        // Если файл не выбран, скрываем предпросмотр, если нет обработанного фото
         if (processedImageUrl === "#") {
-            resetMainPageState(); // Используем обычный сброс, который скрывает все
+            resetMainPageState();
         } else {
-            // Если было обработанное фото и пользователь отменил выбор нового,
-            // просто возвращаем отображение старого и кнопок
             goBackToMainPage();
         }
     }
 });
 
 // Вспомогательная функция для полного сброса состояния главной страницы
-// (используется при отмене выбора или при первой загрузке)
 function resetMainPageState() {
     processedImageUrl = "#";
     previewImage.src = "#";
     previewImage.classList.add('hidden');
     loadingIndicator.classList.add('hidden');
+    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
@@ -231,13 +233,14 @@ function resetMainPageState() {
     hideErrorMessage();
 }
 
-// НОВАЯ Вспомогательная функция для сброса состояния главной страницы ПОСЛЕ ОШИБКИ
+// Вспомогательная функция для сброса состояния главной страницы ПОСЛЕ ОШИБКИ
 // Она НЕ скрывает контейнер errorMessageContainer
 function resetMainPageStateAfterError() {
     processedImageUrl = "#";
     previewImage.src = "#";
     previewImage.classList.add('hidden');
     loadingIndicator.classList.add('hidden');
+    loadingMessage.classList.add('hidden'); // Скрываем сообщение о загрузке
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
@@ -288,5 +291,5 @@ document.addEventListener('DOMContentLoaded', () => {
     mainPage.classList.remove('hidden');
     advicePage.classList.add('hidden');
     tipDetailPage.classList.add('hidden');
-    resetMainPageState();
+    resetMainPageState(); // Полный сброс при старте
 });
