@@ -1,5 +1,3 @@
-import io
-
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -80,7 +78,7 @@ def set_circles_on_img(image, circles_list, circle_size=5, color=(255, 0, 0), is
     return temp_image
 
 
-def show_landmarks(img, lmks, circle_size=3, color=(255, 0, 0), figsize=(10,8), is_copy=True):
+def show_landmarks(img, lmks, circle_size=3, color=(255, 0, 0), figsize=(10, 8), is_copy=True):
     """
     Plot landmarks on image
     :param img: source image
@@ -94,27 +92,6 @@ def show_landmarks(img, lmks, circle_size=3, color=(255, 0, 0), figsize=(10,8), 
     plt.show()
 
 
-def show_landmarks_return_img(img, lmks, circle_size=3, color=(255, 0, 0), is_copy=True):
-    """
-    Plot landmarks on image and return the modified image as a JPEG byte stream.
-    :param img: source image (numpy array)
-    :param lmks: landmarks to show
-    :param circle_size: landmarks size
-    :param color: landmarks color
-    :param is_copy: plot on source image or use copy
-    :return: Bytes of the processed image in JPEG format
-    """
-    # Create a copy to draw on, so the original image is not modified
-    processed_img = set_circles_on_img(img, lmks, circle_size=circle_size, color=color, is_copy=is_copy)
-
-    # Encode the image to JPEG format in memory
-    is_success, buffer = cv2.imencode(".jpg", processed_img)
-    if not is_success:
-        raise Exception("Could not encode image to JPEG.")
-
-    return io.BytesIO(buffer)
-
-
 def alignment_orig(src_img, src_pts, ncols=96, nrows=112, custom_align=None):
     """
     Original alignment function for MTCNN
@@ -124,13 +101,13 @@ def alignment_orig(src_img, src_pts, ncols=96, nrows=112, custom_align=None):
     """
     from matlab_cp2tform import get_similarity_transform_for_cv2
 
-    ref_pts = [ [30.2946, 51.6963],[65.5318, 51.5014],
-        [48.0252, 71.7366],[33.5493, 92.3655],[62.7299, 92.2041] ]
+    ref_pts = [[30.2946, 51.6963], [65.5318, 51.5014],
+               [48.0252, 71.7366], [33.5493, 92.3655], [62.7299, 92.2041]]
 
     if custom_align is not None:
         row[0] += custom_align[0]
         row[1] += custom_align[1]
-        
+
     elif ncols == 112:
         for row in ref_pts:
             row[0] += 8.0
@@ -153,5 +130,3 @@ def alignment_orig(src_img, src_pts, ncols=96, nrows=112, custom_align=None):
     tfm = get_similarity_transform_for_cv2(s, r)
     face_img = cv2.warpAffine(src_img, tfm, crop_size)
     return face_img
-
-
