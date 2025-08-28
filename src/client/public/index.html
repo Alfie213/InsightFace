@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Scanner App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Основная страница загрузки фото -->
+        <div id="mainPage" class="page">
+            <h1>Face Scanner</h1>
+
+            <div class="upload-section">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="upload-button" onclick="document.getElementById('imageUpload').click()">Upload Image</button>
+            </div>
+
+            <!-- Контейнер для сообщений об ошибках -->
+            <div id="errorMessageContainer" class="error-message-container hidden">
+                <p id="errorMessageText"></p>
+            </div>
+
+            <!-- Контейнер для предпросмотра изображения и индикатора загрузки -->
+            <div id="imagePreviewContainer" class="image-preview-container hidden">
+                <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
+                <div id="loadingIndicator" class="loading-spinner hidden"></div>
+                <p id="loadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
+            </div>
+
+            <!-- Подсказка для увеличения изображения -->
+            <p id="zoomHint" class="zoom-hint hidden">Нажмите на фото, чтобы увеличить</p>
+
+            <!-- КНОПКА СКАЧИВАНИЯ - ПЕРЕМЕЩЕНА СЮДА -->
+            <button id="downloadImageButton" class="download-button hidden">Скачать изображение</button>
+
+
+            <!-- Контейнер для результатов симметрии -->
+            <div id="symmetryResultsContainer" class="symmetry-results-container hidden">
+                <h3>Анализ симметрии:</h3>
+                <p id="symmetryIndex">Индекс симметрии: --%</p>
+                <p id="symmetryDescription"></p>
+                <div id="symmetryLinesDescriptionContainer" class="symmetry-lines-description-container">
+                    <h4>Пояснение к линиям:</h4>
+                    <ul id="symmetryLinesList">
+                        <li><strong>Желтая линия:</strong> Центральная ось симметрии лица, проходящая через середину глаз.</li>
+                        <li><strong>Оранжевые линии:</strong> Горизонтальные линии, показывающие уровень глаз и уголков рта.</li>
+                        <li><strong>Красные линии:</strong> Показывают отклонение черт лица от идеальной симметрии: чем длиннее линия, тем больше отклонение.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Контейнер для кнопок категорий (Разум, Тело, Лицо, ?) -->
+            <div id="categoryButtonsContainer" class="category-buttons-container hidden">
+                <button class="category-button" data-category="mind">Разум</button>
+                <button class="category-button" data-category="body">Тело</button>
+                <button class="category-button" data-category="face">Лицо</button>
+                <button class="category-button" data-category="faq">?</button>
+            </div>
+        </div>
+
+        <!-- Страница советов (Разум Совет 1, Тело Совет 1 и т.д.) -->
+        <div id="advicePage" class="page hidden">
+            <div class="header">
+                <button class="back-button" onclick="goBackToMainPage()">← Назад</button>
+                <h2 id="advicePageTitle"></h2>
+            </div>
+            <div id="adviceButtonsContainer" class="advice-buttons-container">
+                <!-- Кнопки советов будут динамически добавляться сюда JS -->
+            </div>
+        </div>
+
+        <!-- Страница конкретного совета -->
+        <div id="tipDetailPage" class="page hidden">
+            <div class="header">
+                <button class="back-button" onclick="goBackToAdvicePage()">← Назад</button>
+                <h2 id="tipDetailPageTitle"></h2>
+            </div>
+            <div class="tip-content">
+                <p id="tipDetailText"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Модальное окно для приближения изображения -->
+    <div id="imageZoomModal" class="modal hidden">
+        <div class="modal-content-zoom">
+            <span class="close-button" id="closeZoomModal">&times;</span>
+            <img id="zoomedImage" src="#" alt="Увеличенное изображение">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
