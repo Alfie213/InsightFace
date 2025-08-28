@@ -16,21 +16,21 @@ PROJECT_ROOT = current_file.parent.parent.parent
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
 from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry
-from utils.utils_landmarks import \
-    get_five_landmarks_from_net  # Возможно, понадобится для calculate_symmetry_index напрямую
+from utils.utils_landmarks import get_five_landmarks_from_net
 
 app = Flask(__name__)
 CORS(app)
 
-# Убедитесь, что папка utils является пакетом (содержит __init__.py)
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
 
 # --- Global Model Loading ---
 face_alignment_model = None
+face_cascade = None
+HAARCASCADE_PATH = PROJECT_ROOT / 'src' / 'server' / 'utils' / 'haarcascade_frontalface_default.xml'
 
 
 def load_face_model():
-    global face_alignment_model
+    global face_alignment_model, face_cascade
     if face_alignment_model is None:
         try:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -41,10 +41,20 @@ def load_face_model():
             app.logger.error(f"Failed to load face alignment model: {e}")
             raise
 
+    if face_cascade is None:
+        if not HAARCASCADE_PATH.exists():
+            app.logger.error(f"Haar Cascade XML file not found at: {HAARCASCADE_PATH}")
+            raise FileNotFoundError(f"Haar Cascade XML file not found at: {HAARCASCADE_PATH}")
+        face_cascade = cv2.CascadeClassifier(str(HAARCASCADE_PATH))
+        if face_cascade.empty():
+            app.logger.error("Failed to load Haar Cascade classifier.")
+            raise RuntimeError("Failed to load Haar Cascade classifier.")
+        app.logger.info("Haar Cascade classifier loaded successfully.")
+
 
 @app.before_request
 def before_first_request():
-    if face_alignment_model is None:
+    if face_alignment_model is None or face_cascade is None:
         load_face_model()
 
 
@@ -62,49 +72,94 @@ def process_image():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    if file:
-        try:
-            in_memory_file = io.BytesIO()
-            file.save(in_memory_file)
-            data = np.frombuffer(in_memory_file.getvalue(), dtype=np.uint8)
-            img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+    # --- СЕРВЕРНАЯ ВАЛИДАЦИЯ: ТИП И РАЗМЕР ФАЙЛА ---
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif']
+    max_size_mb = 5
+    max_size_bytes = max_size_mb * 1024 * 1024
 
-            if img is None:
-                return jsonify({"error": "Could not decode image. Is it a valid image format?"}), 400
+    if file.content_type not in allowed_types:
+        return jsonify({"error": f"Неподдерживаемый тип файла. Допустимы: {', '.join(allowed_types)}"}), 400
 
-            if face_alignment_model is None:
-                raise Exception("Face alignment model is not loaded. Server might have failed to initialize.")
+    if request.content_length is not None and request.content_length > max_size_bytes:
+        return jsonify({"error": f"Файл слишком большой. Максимальный размер файла: {max_size_mb} MB."}), 400
 
-            # Получаем все ключевые точки
-            all_lmks = get_lmks_by_img(face_alignment_model, img)
+    try:
+        in_memory_file = io.BytesIO()
+        file.save(in_memory_file)
+        data = np.frombuffer(in_memory_file.getvalue(), dtype=np.uint8)
+        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
 
-            # Рассчитываем индекс симметрии, используя полный набор точек
-            symmetry_index = calculate_symmetry_index(all_lmks)
-
-            # Получаем обработанное изображение с точками и линиями симметрии
-            processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
-            processed_image_stream.seek(0)
-
-            # Кодируем изображение в base64 для передачи в JSON
-            encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
-
-            # Возвращаем JSON-ответ
+        if img is None:
             return jsonify({
-                "processed_image": encoded_image,
-                "symmetry_index": symmetry_index,
-                "symmetry_description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
-                                        ("Великолепная симметрия!" if symmetry_index > 90 else
-                                         "Высокая симметрия." if symmetry_index > 75 else
-                                         "Хорошая симметрия." if symmetry_index > 50 else
-                                         "Есть заметные отклонения в симметрии.")
-            })
+                               "error": "Не удалось декодировать изображение. Возможно, файл поврежден или не является корректным изображением."}), 400
 
-        except Exception as e:
-            app.logger.error(f"Error processing image: {e}")
-            if app.debug:
-                return jsonify({"error": f"An internal server error occurred: {str(e)}", "trace": str(e)}), 500
-            else:
-                return jsonify({"error": "An internal server error occurred. Please try again later."}), 500
+        if face_alignment_model is None or face_cascade is None:
+            raise Exception("Models are not loaded. Server might have failed to initialize.")
+
+        # --- НОВАЯ СЕРВЕРНАЯ ВАЛИДАЦИЯ: ОБНАРУЖЕНИЕ ЛИЦА С ПОМОЩЬЮ HAAR CASCADE ---
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+        if len(faces) == 0:
+            # Лицо не обнаружено с помощью Haar Cascade
+            # ИЗМЕНЕНИЕ: Кодируем numpy.ndarray в JPEG байты перед base64
+            is_success, buffer = cv2.imencode(".jpg", img)
+            if not is_success:
+                raise Exception("Could not encode original image to JPEG for error response.")
+            encoded_original_image = base64.b64encode(buffer).decode('utf-8')  # Использование `buffer` напрямую
+
+            return jsonify({
+                "error": "Лицо не обнаружено на изображении. Пожалуйста, попробуйте другую фотографию (убедитесь, что лицо хорошо видно).",
+                "processed_image": encoded_original_image,
+                "symmetry_index": 0.0,
+                "symmetry_description": "Лицо не обнаружено для анализа симметрии."
+            }), 422
+
+            # Получаем все ключевые точки от WFLW модели
+        all_lmks = get_lmks_by_img(face_alignment_model, img)
+
+        # Дополнительная проверка: если WFLW все равно ничего не нашла
+        if all_lmks is None or len(all_lmks) == 0:
+            # ИЗМЕНЕНИЕ: Кодируем numpy.ndarray в JPEG байты перед base64
+            is_success, buffer = cv2.imencode(".jpg", img)
+            if not is_success:
+                raise Exception("Could not encode original image to JPEG for error response.")
+            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
+
+            return jsonify({
+                "error": "Лицо обнаружено, но модель для ключевых точек не смогла его обработать. Пожалуйста, попробуйте другую фотографию.",
+                "processed_image": encoded_original_image,
+                "symmetry_index": 0.0,
+                "symmetry_description": "Модель ключевых точек не смогла обработать лицо."
+            }), 422
+
+            # Рассчитываем индекс симметрии
+        symmetry_index = calculate_symmetry_index(all_lmks)
+
+        # Получаем обработанное изображение с точками и линиями симметрии
+        processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
+        processed_image_stream.seek(0)
+
+        # Кодируем изображение в base64 для передачи в JSON
+        encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
+
+        # Возвращаем JSON-ответ
+        return jsonify({
+            "processed_image": encoded_image,
+            "symmetry_index": symmetry_index,
+            "symmetry_description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
+                                    ("Великолепная симметрия!" if symmetry_index > 90 else
+                                     "Высокая симметрия." if symmetry_index > 75 else
+                                     "Хорошая симметрия." if symmetry_index > 50 else
+                                     "Есть заметные отклонения в симметрии.")
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error processing image: {e}")
+        if app.debug:
+            return jsonify({"error": f"Произошла внутренняя ошибка сервера: {str(e)}", "trace": str(e)}), 500
+        else:
+            return jsonify({"error": "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте еще раз."}), 500
 
 
 if __name__ == '__main__':

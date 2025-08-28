@@ -64,6 +64,29 @@ h1 {
     background-color: #0056b3;
 }
 
+/* Стили для контейнера сообщений об ошибках */
+.error-message-container {
+    background-color: #f8d7da; /* Светло-красный фон */
+    color: #721c24; /* Темно-красный текст */
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin-bottom: 20px; /* Отступ от элементов выше/ниже */
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    display: flex; /* Для выравнивания текста */
+    align-items: center;
+    justify-content: center;
+}
+
+.error-message-container p {
+    margin: 0; /* Убираем стандартные отступы у параграфа */
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+
 .image-preview-container {
     margin-top: 20px;
     border: 1px dashed #ccc;
@@ -112,7 +135,7 @@ h1 {
     100% { transform: rotate(360deg); }
 }
 
-/* НОВЫЕ СТИЛИ ДЛЯ РЕЗУЛЬТАТОВ СИММЕТРИИ */
+/* Стили для результатов симметрии */
 .symmetry-results-container {
     margin-top: 20px;
     padding: 15px;
