@@ -10,6 +10,8 @@ import torch
 
 # --- Project Root Definition ---
 current_file = Path(__file__).resolve()
+# main.py находится в src/server/, PROJECT_ROOT - это на 3 уровня выше (face-scanner-app/)
+# С учетом того, что .venv тоже в корне face-scanner-app/, это корректный путь.
 PROJECT_ROOT = current_file.parent.parent.parent
 
 # Import your original utility functions
@@ -21,12 +23,20 @@ from utils.utils_landmarks import get_five_landmarks_from_net
 app = Flask(__name__)
 CORS(app)
 
+# Убедитесь, что папка utils является пакетом (содержит __init__.py)
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
 
 # --- Global Model Loading ---
 face_alignment_model = None
 face_cascade = None
+# ИЗМЕНЕНИЕ: Путь к HAARCASCADE_PATH должен быть относительно КОРНЯ РЕПОЗИТОРИЯ
+# Render будет видеть `face-scanner-app/` как корень.
+# Поэтому путь должен быть `src/server/utils/haarcascade_frontalface_default.xml`
 HAARCASCADE_PATH = PROJECT_ROOT / 'src' / 'server' / 'utils' / 'haarcascade_frontalface_default.xml'
+
+
+# ПРОВЕРКА: Если вы скопировали haarcascade_frontalface_default.xml в папку utils,
+# то этот путь должен быть правильным.
 
 
 def load_face_model():
@@ -111,7 +121,6 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Лицо не обнаружено для анализа симметрии.",
-                # "symmetry_lines_description": [] # УДАЛЕНО
             }), 422
 
             # Получаем все ключевые точки от WFLW модели
@@ -128,7 +137,6 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Модель ключевых точек не смогла обработать лицо.",
-                # "symmetry_lines_description": [] # УДАЛЕНО
             }), 422
 
         symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
@@ -146,7 +154,6 @@ def process_image():
                                      "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
                                      "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
                                      "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали."),
-            # "symmetry_lines_description": symmetry_lines_description # УДАЛЕНО
         })
 
     except Exception as e:
@@ -159,4 +166,7 @@ def process_image():
 
 if __name__ == '__main__':
     load_face_model()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # ИЗМЕНЕНИЕ: Для Render не запускаем `app.run()` напрямую.
+    # Это будет запускать Gunicorn (или другой WSGI-сервер), который мы укажем в Start Command.
+    # Если вы хотите тестировать локально, то оставьте эту строку.
+    # app.run(debug=True, host='0.0.0.0', port=5000)
