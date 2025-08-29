@@ -10,8 +10,6 @@ import torch
 
 # --- Project Root Definition ---
 current_file = Path(__file__).resolve()
-# main.py находится в src/server/, PROJECT_ROOT - это на 3 уровня выше (face-scanner-app/)
-# С учетом того, что .venv тоже в корне face-scanner-app/, это корректный путь.
 PROJECT_ROOT = current_file.parent.parent.parent
 
 # Import your original utility functions
@@ -23,29 +21,25 @@ from utils.utils_landmarks import get_five_landmarks_from_net
 app = Flask(__name__)
 CORS(app)
 
-# Убедитесь, что папка utils является пакетом (содержит __init__.py)
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
 
 # --- Global Model Loading ---
 face_alignment_model = None
 face_cascade = None
-# ИЗМЕНЕНИЕ: Путь к HAARCASCADE_PATH должен быть относительно КОРНЯ РЕПОЗИТОРИЯ
-# Render будет видеть `face-scanner-app/` как корень.
-# Поэтому путь должен быть `src/server/utils/haarcascade_frontalface_default.xml`
 HAARCASCADE_PATH = PROJECT_ROOT / 'src' / 'server' / 'utils' / 'haarcascade_frontalface_default.xml'
-
-
-# ПРОВЕРКА: Если вы скопировали haarcascade_frontalface_default.xml в папку utils,
-# то этот путь должен быть правильным.
+# НОВОЕ: Переменная для хранения используемого device
+MODEL_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 def load_face_model():
-    global face_alignment_model, face_cascade
+    global face_alignment_model, face_cascade, MODEL_DEVICE
     if face_alignment_model is None:
         try:
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            app.logger.info(f"Loading face alignment model on device: {device}")
-            face_alignment_model = get_model_by_name('WFLW', device=device)
+            # Render бесплатный tier НЕ поддерживает CUDA.
+            # Поэтому явно устанавливаем device='cpu' для модели.
+            # Мы также сохраним это значение в MODEL_DEVICE.
+            app.logger.info(f"Loading face alignment model on device: {MODEL_DEVICE}")
+            face_alignment_model = get_model_by_name('WFLW', device=MODEL_DEVICE)
             app.logger.info("Face alignment model loaded successfully.")
         except Exception as e:
             app.logger.error(f"Failed to load face alignment model: {e}")
@@ -124,7 +118,8 @@ def process_image():
             }), 422
 
             # Получаем все ключевые точки от WFLW модели
-        all_lmks = get_lmks_by_img(face_alignment_model, img)
+        # ИЗМЕНЕНИЕ: Передаем `MODEL_DEVICE` в `get_lmks_by_img`
+        all_lmks = get_lmks_by_img(face_alignment_model, img, device=MODEL_DEVICE)
 
         if all_lmks is None or len(all_lmks) == 0:
             is_success, buffer = cv2.imencode(".jpg", img)
@@ -166,7 +161,4 @@ def process_image():
 
 if __name__ == '__main__':
     load_face_model()
-    # ИЗМЕНЕНИЕ: Для Render не запускаем `app.run()` напрямую.
-    # Это будет запускать Gunicorn (или другой WSGI-сервер), который мы укажем в Start Command.
-    # Если вы хотите тестировать локально, то оставьте эту строку.
-    # app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000) # Закомментировано для деплоя на Render

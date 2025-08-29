@@ -32,7 +32,7 @@ def get_model_by_name(model_name, root_models_path='hrnetv2_models', prefix='HR1
     return model
 
 
-def get_lmks_by_img(model, img, output_size=(256, 256), rot=0):
+def get_lmks_by_img(model, img, output_size=(256, 256), rot=0, device='cuda'):
 #     img = np.array(Image.open(image_path).convert('RGB'), dtype=np.float32)
 
     face_center = torch.Tensor([img.shape[1]//2, img.shape[0]/2])
@@ -41,9 +41,11 @@ def get_lmks_by_img(model, img, output_size=(256, 256), rot=0):
     img_crop = crop(img, face_center, crop_scale, output_size=output_size, rot=rot)
     img_crop = (img_crop/255.0 - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])
     img_crop = img_crop.transpose([2, 0, 1])
-    img_crop = torch.tensor(img_crop, dtype=torch.float32).unsqueeze(0).cuda()
+
+    img_tensor = torch.tensor(img_crop, dtype=torch.float32).unsqueeze(0)
+    img_tensor = img_tensor.to(device)
     with torch.no_grad():
-        pred = model(img_crop)
+        pred = model(img_tensor)
     return decode_preds(pred, [face_center], [crop_scale], [output_size[0]/4,output_size[1]/4]).cpu().numpy().squeeze(0)
 
 
