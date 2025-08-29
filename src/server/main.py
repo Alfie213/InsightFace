@@ -161,4 +161,4 @@ def process_image():
 
 if __name__ == '__main__':
     load_face_model()
-    app.run(debug=True, host='0.0.0.0', port=5000) # Закомментировано для деплоя на Render
+    # app.run(debug=True, host='0.0.0.0', port=5000) # Закомментировано для деплоя на Render
