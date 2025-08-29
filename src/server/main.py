@@ -13,31 +13,31 @@ current_file = Path(__file__).resolve()
 PROJECT_ROOT = current_file.parent.parent.parent
 
 # Import your original utility functions
-from .utils.utils_inference import get_lmks_by_img, get_model_by_name
+from utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
-from .utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry
-from .utils.utils_landmarks import get_five_landmarks_from_net
+from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry, \
+    determine_face_shape  # НОВОЕ
+from utils.utils_landmarks import get_five_landmarks_from_net
 
 app = Flask(__name__)
 CORS(app)
 
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
+(current_file.parent.parent / '__init__.py').touch(exist_ok=True)
+(current_file.parent / '__init__.py').touch(exist_ok=True)
 
 # --- Global Model Loading ---
 face_alignment_model = None
 face_cascade = None
 HAARCASCADE_PATH = PROJECT_ROOT / 'src' / 'server' / 'utils' / 'haarcascade_frontalface_default.xml'
-# НОВОЕ: Переменная для хранения используемого device
 MODEL_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(MODEL_DEVICE)
 
 
 def load_face_model():
     global face_alignment_model, face_cascade, MODEL_DEVICE
     if face_alignment_model is None:
         try:
-            # Render бесплатный tier НЕ поддерживает CUDA.
-            # Поэтому явно устанавливаем device='cpu' для модели.
-            # Мы также сохраним это значение в MODEL_DEVICE.
             app.logger.info(f"Loading face alignment model on device: {MODEL_DEVICE}")
             face_alignment_model = get_model_by_name('WFLW', device=MODEL_DEVICE)
             app.logger.info("Face alignment model loaded successfully.")
@@ -115,10 +115,10 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Лицо не обнаружено для анализа симметрии.",
+                "face_shape": None  # НОВОЕ: Возвращаем None для формы лица
             }), 422
 
             # Получаем все ключевые точки от WFLW модели
-        # ИЗМЕНЕНИЕ: Передаем `MODEL_DEVICE` в `get_lmks_by_img`
         all_lmks = get_lmks_by_img(face_alignment_model, img, device=MODEL_DEVICE)
 
         if all_lmks is None or len(all_lmks) == 0:
@@ -132,9 +132,12 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Модель ключевых точек не смогла обработать лицо.",
+                "face_shape": None  # НОВОЕ: Возвращаем None для формы лица
             }), 422
 
         symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
+
+        face_shape_data = determine_face_shape(all_lmks)
 
         processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
         processed_image_stream.seek(0)
@@ -149,6 +152,7 @@ def process_image():
                                      "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
                                      "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
                                      "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали."),
+            "face_shape": face_shape_data  # НОВОЕ: Добавляем данные о форме лица
         })
 
     except Exception as e:
@@ -161,4 +165,4 @@ def process_image():
 
 if __name__ == '__main__':
     load_face_model()
-    app.run(debug=True, host='0.0.0.0', port=5000) # Закомментировано для деплоя на Render
+    app.run(debug=True, host='0.0.0.0', port=5000)

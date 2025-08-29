@@ -19,6 +19,12 @@ const symmetryResultsContainer = document.getElementById('symmetryResultsContain
 const symmetryIndexDisplay = document.getElementById('symmetryIndex');
 const symmetryDescriptionDisplay = document.getElementById('symmetryDescription');
 
+// ЭЛЕМЕНТЫ ДЛЯ ФОРМЫ ЛИЦА
+const faceShapeResultsContainer = document.getElementById('faceShapeResultsContainer');
+const faceShapeNameDisplay = document.getElementById('faceShapeName');
+const faceShapeDescriptionDisplay = document.getElementById('faceShapeDescription');
+
+
 // ЭЛЕМЕНТЫ ДЛЯ ЗУМА И СКАЧИВАНИЯ
 const zoomHint = document.getElementById('zoomHint');
 const downloadImageButton = document.getElementById('downloadImageButton');
@@ -97,6 +103,7 @@ function goBackToMainPage() {
         previewImage.src = processedImageUrl;
         categoryButtonsContainer.classList.remove('hidden');
         symmetryResultsContainer.classList.remove('hidden');
+        faceShapeResultsContainer.classList.remove('hidden');
         zoomHint.classList.remove('hidden');
         downloadImageButton.classList.remove('hidden');
     } else {
@@ -105,6 +112,7 @@ function goBackToMainPage() {
         previewImage.src = "#";
         categoryButtonsContainer.classList.add('hidden');
         symmetryResultsContainer.classList.add('hidden');
+        faceShapeResultsContainer.classList.add('hidden');
         zoomHint.classList.add('hidden');
         downloadImageButton.classList.add('hidden');
     }
@@ -132,6 +140,7 @@ imageUploadInput.addEventListener('change', async function(event) {
     loadingMessage.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
+    faceShapeResultsContainer.classList.add('hidden');
     zoomHint.classList.add('hidden');
     downloadImageButton.classList.add('hidden');
 
@@ -168,6 +177,9 @@ imageUploadInput.addEventListener('change', async function(event) {
         previewImage.src = "#";
         symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
         symmetryDescriptionDisplay.textContent = "";
+        faceShapeNameDisplay.textContent = "--";
+        faceShapeDescriptionDisplay.textContent = "";
+
 
         // 2. Отправляем фото на бэкенд для обработки
         const formData = new FormData();
@@ -189,6 +201,17 @@ imageUploadInput.addEventListener('change', async function(event) {
 
                 symmetryIndexDisplay.textContent = `Индекс симметрии: ${result.symmetry_index}%`;
                 symmetryDescriptionDisplay.textContent = result.symmetry_description;
+
+                // Отображаем форму лица
+                if (result.face_shape) {
+                    faceShapeNameDisplay.textContent = result.face_shape.shape_name;
+                    faceShapeDescriptionDisplay.textContent = result.face_shape.description;
+                    faceShapeResultsContainer.classList.remove('hidden');
+                } else {
+                    faceShapeNameDisplay.textContent = "Не определено";
+                    faceShapeDescriptionDisplay.textContent = "Не удалось определить форму лица.";
+                    faceShapeResultsContainer.classList.remove('hidden');
+                }
 
                 previewImage.classList.remove('hidden');
                 loadingIndicator.classList.add('hidden');
@@ -212,6 +235,7 @@ imageUploadInput.addEventListener('change', async function(event) {
                     imagePreviewContainer.classList.remove('hidden');
 
                     symmetryResultsContainer.classList.add('hidden');
+                    faceShapeResultsContainer.classList.add('hidden');
                 } else {
                     processedImageUrl = "#";
                     lastErrorProcessedImage = "#";
@@ -248,11 +272,14 @@ function resetMainPageState() {
     loadingMessage.classList.add('hidden');
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
+    faceShapeResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
     zoomHint.classList.add('hidden');
     downloadImageButton.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+    faceShapeNameDisplay.textContent = "--";
+    faceShapeDescriptionDisplay.textContent = "";
     hideErrorMessage();
 }
 
@@ -266,22 +293,23 @@ function resetMainPageStateAfterError() {
     loadingMessage.classList.add('hidden');
     imagePreviewContainer.classList.add('hidden');
     symmetryResultsContainer.classList.add('hidden');
+    faceShapeResultsContainer.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
     zoomHint.classList.add('hidden');
     downloadImageButton.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+    faceShapeNameDisplay.textContent = "--";
+    faceShapeDescriptionDisplay.textContent = "";
     // НЕ скрываем hideErrorMessage() здесь! Сообщение должно остаться
 }
 
 
 // --- Обработчики для Зума и Скачивания ---
-// Открытие модального окна при клике на изображение
 previewImage.addEventListener('click', () => {
     if (processedImageUrl !== "#" && !previewImage.classList.contains('hidden')) {
         zoomedImage.src = processedImageUrl;
         imageZoomModal.classList.remove('hidden');
-        // Запрещаем прокрутку основного body, пока открыт модал
         document.body.style.overflow = 'hidden';
     }
 });
@@ -289,7 +317,6 @@ previewImage.addEventListener('click', () => {
 // Закрытие модального окна по кнопке "X"
 closeZoomModalButton.addEventListener('click', () => {
     imageZoomModal.classList.add('hidden');
-    // Разрешаем прокрутку body обратно
     document.body.style.overflow = '';
 });
 
@@ -297,7 +324,6 @@ closeZoomModalButton.addEventListener('click', () => {
 imageZoomModal.addEventListener('click', (event) => {
     if (event.target === imageZoomModal) {
         imageZoomModal.classList.add('hidden');
-        // Разрешаем прокрутку body обратно
         document.body.style.overflow = '';
     }
 });
@@ -332,6 +358,7 @@ categoryButtonsContainer.addEventListener('click', (event) => {
 
 function showAdviceList(category) {
     showPage(advicePage);
+    // Капитализация первой буквы для заголовка
     advicePageTitle.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ' Советы';
     adviceButtonsContainer.innerHTML = '';
 
