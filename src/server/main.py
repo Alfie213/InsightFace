@@ -13,10 +13,10 @@ current_file = Path(__file__).resolve()
 PROJECT_ROOT = current_file.parent.parent.parent
 
 # Import your original utility functions
-from utils.utils_inference import get_lmks_by_img, get_model_by_name
+from .utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
-from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry
-from utils.utils_landmarks import get_five_landmarks_from_net
+from .utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry
+from .utils.utils_landmarks import get_five_landmarks_from_net
 
 app = Flask(__name__)
 CORS(app)
