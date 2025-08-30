@@ -287,14 +287,13 @@ h1 {
     flex-shrink: 0;
 }
 /* Определение цветов (ВАЖНО: Эти цвета должны соответствовать цветам линий в Python!) */
-.color-box.yellow { background-color: #FFFF00; } /* Желтая (центральная симметрия) */
-.color-box.orange { background-color: #FFA500; } /* Оранжевая (горизонтальная симметрия) */
-.color-box.red { background-color: #FF0000; } /* Красная (отклонения симметрии) */
+.color-box.yellow { background-color: #FFFF00; }
+.color-box.orange { background-color: #FFA500; }
+.color-box.red { background-color: #FF0000; }
 
-.color-box.purple { background-color: #FF00FF; } /* Пурпурный (высота лица) */
-.color-box.cyan { background-color: #00FFFF; } /* Бирюзовый (скулы) */
-.color-box.green { background-color: #00FF00; } /* Зеленый (лоб) */
-.color-box.blue { background-color: #0000FF; } /* Синий (челюсть) */
+.color-box.cyan { background-color: #00FFFF; }
+.color-box.green { background-color: #00FF00; }
+.color-box.pink { background-color: #FF00FF; }
 
 
 /* Контейнер для кнопок категорий */
