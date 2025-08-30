@@ -155,11 +155,13 @@ h1 {
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    /* Убираем абсолютное позиционирование */
+    /* position: absolute; */
+    /* top: 50%; */
+    /* left: 50%; */
+    /* transform: translate(-50%, -50%); */
     z-index: 10;
+    margin-bottom: 10px; /* Отступ от сообщения */
 }
 
 @keyframes spin {
@@ -173,14 +175,16 @@ h1 {
 
 /* Стили для сообщения о загрузке */
 .loading-message {
-    position: absolute;
-    top: calc(50% + 30px);
-    left: 50%;
-    transform: translateX(-50%);
+    /* Убираем абсолютное позиционирование */
+    /* position: absolute; */
+    /* top: calc(50% + 30px); */
+    /* left: 50%; */
+    /* transform: translateX(-50%); */
     color: #555;
     font-size: 1.1em;
     font-weight: bold;
     z-index: 10;
+    text-align: center; /* На случай, если текст переносится */
 }
 
 /* Подсказка для увеличения */
