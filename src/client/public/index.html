@@ -22,42 +22,58 @@
                 <p id="errorMessageText"></p>
             </div>
 
-            <!-- Контейнер для предпросмотра изображения и индикатора загрузки -->
-            <div id="imagePreviewContainer" class="image-preview-container hidden">
-                <img id="previewImage" src="#" alt="Предварительный просмотр изображения" class="hidden">
-                <div id="loadingIndicator" class="loading-spinner hidden"></div>
-                <p id="loadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
-            </div>
+            <!-- БЛОК АНАЛИЗА СИММЕТРИИ -->
+            <div id="symmetryAnalysisBlock" class="analysis-block hidden">
+                <h3 class="block-title">Анализ симметрии</h3>
+                <div id="symmetryImageContainer" class="image-preview-container">
+                    <img id="symmetryImagePreview" src="#" alt="Анализ симметрии" class="hidden">
+                    <div id="symmetryLoadingIndicator" class="loading-spinner hidden"></div>
+                    <p id="symmetryLoadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
+                </div>
+                <p id="symmetryZoomHint" class="zoom-hint hidden">Нажмите на фото, чтобы увеличить</p>
+                <button id="downloadSymmetryImageButton" class="download-button hidden">Скачать анализ симметрии</button>
 
-            <!-- Подсказка для увеличения изображения -->
-            <p id="zoomHint" class="zoom-hint hidden">Нажмите на фото, чтобы увеличить</p>
-
-            <!-- Кнопка для скачивания изображения -->
-            <button id="downloadImageButton" class="download-button hidden">Скачать изображение</button>
-
-
-            <!-- Контейнер для результатов симметрии -->
-            <div id="symmetryResultsContainer" class="symmetry-results-container hidden">
-                <h3>Анализ симметрии:</h3>
-                <p id="symmetryIndex">Индекс симметрии: --%</p>
-                <p id="symmetryDescription"></p>
-                <div id="symmetryLinesDescriptionContainer" class="symmetry-lines-description-container">
-                    <h4>Пояснение к линиям:</h4>
-                    <ul id="symmetryLinesList">
-                        <li><strong>Желтая линия:</strong> Центральная ось симметрии лица, проходящая через середину глаз.</li>
-                        <li><strong>Оранжевые линии:</strong> Горизонтальные линии, показывающие уровень глаз и уголков рта.</li>
-                        <li><strong>Красные линии:</strong> Показывают отклонение черт лица от идеальной симметрии: чем длиннее линия, тем больше отклонение.</li>
-                    </ul>
+                <div id="symmetryResultsContainer" class="results-text-container">
+                    <h4>Индекс симметрии:</h4>
+                    <p id="symmetryIndex">--%</p>
+                    <p id="symmetryDescription"></p>
+                    <div id="symmetryLinesDescriptionContainer" class="lines-description-container">
+                        <h5>Пояснение к линиям:</h5>
+                        <ul id="symmetryLinesList">
+                            <li><span class="color-box yellow"></span> <strong>Желтая линия:</strong> Центральная ось симметрии лица, проходящая через середину глаз.</li>
+                            <li><span class="color-box orange"></span> <strong>Оранжевые линии:</strong> Горизонтальные линии, показывающие уровень глаз и уголков рта.</li>
+                            <li><span class="color-box red"></span> <strong>Красные линии:</strong> Показывают отклонение черт лица от идеальной симметрии: чем длиннее линия, тем больше отклонение.</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
-            <!-- Контейнер: Для формы лица -->
-            <div id="faceShapeResultsContainer" class="face-shape-results-container hidden">
-                <h3>Форма лица:</h3>
-                <p id="faceShapeName">--</p>
-                <p id="faceShapeDescription"></p>
-            </div>
+            <!-- БЛОК АНАЛИЗА ФОРМЫ ЛИЦА -->
+            <div id="faceShapeAnalysisBlock" class="analysis-block hidden">
+                <h3 class="block-title">Анализ формы лица</h3>
+                <div id="faceShapeImageContainer" class="image-preview-container">
+                    <img id="faceShapeImagePreview" src="#" alt="Анализ формы лица" class="hidden">
+                    <div id="faceShapeLoadingIndicator" class="loading-spinner hidden"></div>
+                    <p id="faceShapeLoadingMessage" class="loading-message hidden">Анализируем вашу красоту...</p>
+                </div>
+                <p id="faceShapeZoomHint" class="zoom-hint hidden">Нажмите на фото, чтобы увеличить</p>
+                <button id="downloadFaceShapeImageButton" class="download-button hidden">Скачать анализ формы</button>
 
+                <div id="faceShapeResultsContainer" class="results-text-container">
+                    <h4>Форма лица:</h4>
+                    <p id="faceShapeNameDisplay">--</p>
+                    <p id="faceShapeDescriptionDisplay"></p>
+                    <div id="faceShapeLinesDescriptionContainer" class="lines-description-container">
+                        <h5>Пояснение к линиям:</h5>
+                        <ul id="faceShapeLinesList">
+                            <li><span class="color-box purple"></span> <strong>Пурпурная линия:</strong> Вертикальная линия, измеряющая высоту лица (от переносицы до подбородка).</li>
+                            <li><span class="color-box cyan"></span> <strong>Бирюзовая линия:</strong> Горизонтальная линия, измеряющая ширину скул.</li>
+                            <li><span class="color-box green"></span> <strong>Зеленая линия:</strong> Горизонтальная линия, измеряющая ширину лба (между внешними точками бровей).</li>
+                            <li><span class="color-box blue"></span> <strong>Синяя линия:</strong> Горизонтальная линия, измеряющая ширину челюсти (между углами челюсти).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
             <!-- Контейнер для кнопок категорий (Разум, Тело, Лицо, ?) -->
             <div id="categoryButtonsContainer" class="category-buttons-container hidden">

@@ -4,30 +4,39 @@ const advicePage = document.getElementById('advicePage');
 const tipDetailPage = document.getElementById('tipDetailPage');
 
 const imageUploadInput = document.getElementById('imageUpload');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-const previewImage = document.getElementById('previewImage');
-const loadingIndicator = document.getElementById('loadingIndicator');
-const loadingMessage = document.getElementById('loadingMessage');
+
+// Элементы для блока анализа симметрии
+const symmetryAnalysisBlock = document.getElementById('symmetryAnalysisBlock');
+const symmetryImageContainer = document.getElementById('symmetryImageContainer');
+const symmetryImagePreview = document.getElementById('symmetryImagePreview');
+const symmetryLoadingIndicator = document.getElementById('symmetryLoadingIndicator');
+const symmetryLoadingMessage = document.getElementById('symmetryLoadingMessage');
+const symmetryZoomHint = document.getElementById('symmetryZoomHint');
+const downloadSymmetryImageButton = document.getElementById('downloadSymmetryImageButton');
+const symmetryResultsContainer = document.getElementById('symmetryResultsContainer'); // Текстовый блок
+const symmetryIndexDisplay = document.getElementById('symmetryIndex');
+const symmetryDescriptionDisplay = document.getElementById('symmetryDescription');
+
+// Элементы для блока анализа формы лица
+const faceShapeAnalysisBlock = document.getElementById('faceShapeAnalysisBlock');
+const faceShapeImageContainer = document.getElementById('faceShapeImageContainer');
+const faceShapeImagePreview = document.getElementById('faceShapeImagePreview');
+const faceShapeLoadingIndicator = document.getElementById('faceShapeLoadingIndicator');
+const faceShapeLoadingMessage = document.getElementById('faceShapeLoadingMessage');
+const faceShapeZoomHint = document.getElementById('faceShapeZoomHint');
+const downloadFaceShapeImageButton = document.getElementById('downloadFaceShapeImageButton');
+const faceShapeResultsContainer = document.getElementById('faceShapeResultsContainer'); // Текстовый блок
+const faceShapeNameDisplay = document.getElementById('faceShapeNameDisplay');
+const faceShapeDescriptionDisplay = document.getElementById('faceShapeDescriptionDisplay');
+
+
 const categoryButtonsContainer = document.getElementById('categoryButtonsContainer');
 
 // ЭЛЕМЕНТЫ ДЛЯ СООБЩЕНИЙ ОБ ОШИБКАХ
 const errorMessageContainer = document.getElementById('errorMessageContainer');
 const errorMessageText = document.getElementById('errorMessageText');
 
-// ЭЛЕМЕНТЫ ДЛЯ СИММЕТРИИ
-const symmetryResultsContainer = document.getElementById('symmetryResultsContainer');
-const symmetryIndexDisplay = document.getElementById('symmetryIndex');
-const symmetryDescriptionDisplay = document.getElementById('symmetryDescription');
-
-// ЭЛЕМЕНТЫ ДЛЯ ФОРМЫ ЛИЦА
-const faceShapeResultsContainer = document.getElementById('faceShapeResultsContainer');
-const faceShapeNameDisplay = document.getElementById('faceShapeName');
-const faceShapeDescriptionDisplay = document.getElementById('faceShapeDescription');
-
-
-// ЭЛЕМЕНТЫ ДЛЯ ЗУМА И СКАЧИВАНИЯ
-const zoomHint = document.getElementById('zoomHint');
-const downloadImageButton = document.getElementById('downloadImageButton');
+// ЭЛЕМЕНТЫ МОДАЛЬНОГО ОКНА ЗУМА
 const imageZoomModal = document.getElementById('imageZoomModal');
 const zoomedImage = document.getElementById('zoomedImage');
 const closeZoomModalButton = document.getElementById('closeZoomModal');
@@ -68,9 +77,9 @@ const adviceData = {
 };
 
 let currentCategory = '';
-let processedImageUrl = "#";
-let lastErrorProcessedImage = "#";
-
+let lastSuccessfulSymmetryImageUrl = "#";
+let lastSuccessfulFaceShapeImageUrl = "#";
+let lastErrorOriginalImageUrl = "#";
 
 // --- Вспомогательная функция для отображения ошибки ---
 function showErrorMessage(message) {
@@ -97,28 +106,54 @@ function goBackToMainPage() {
     showPage(mainPage);
     hideErrorMessage();
 
-    if (processedImageUrl !== "#" && lastErrorProcessedImage === "#") {
-        imagePreviewContainer.classList.remove('hidden');
-        previewImage.classList.remove('hidden');
-        previewImage.src = processedImageUrl;
-        categoryButtonsContainer.classList.remove('hidden');
+    // Определяем, есть ли успешно обработанные изображения или только оригинал после ошибки
+    if (lastSuccessfulSymmetryImageUrl !== "#") { // Если успешно обработано
+        symmetryAnalysisBlock.classList.remove('hidden');
+        symmetryImagePreview.src = lastSuccessfulSymmetryImageUrl;
+        symmetryImagePreview.classList.remove('hidden');
+        symmetryZoomHint.classList.remove('hidden');
+        downloadSymmetryImageButton.classList.remove('hidden');
         symmetryResultsContainer.classList.remove('hidden');
+
+        faceShapeAnalysisBlock.classList.remove('hidden');
+        faceShapeImagePreview.src = lastSuccessfulFaceShapeImageUrl;
+        faceShapeImagePreview.classList.remove('hidden');
+        faceShapeZoomHint.classList.remove('hidden');
+        downloadFaceShapeImageButton.classList.remove('hidden');
         faceShapeResultsContainer.classList.remove('hidden');
-        zoomHint.classList.remove('hidden');
-        downloadImageButton.classList.remove('hidden');
-    } else {
-        imagePreviewContainer.classList.add('hidden');
-        previewImage.classList.add('hidden');
-        previewImage.src = "#";
-        categoryButtonsContainer.classList.add('hidden');
+
+        categoryButtonsContainer.classList.remove('hidden');
+
+    } else if (lastErrorOriginalImageUrl !== "#") { // Если была ошибка, но есть оригинал
+        symmetryAnalysisBlock.classList.remove('hidden');
+        symmetryImagePreview.src = lastErrorOriginalImageUrl;
+        symmetryImagePreview.classList.remove('hidden');
+
+        faceShapeAnalysisBlock.classList.remove('hidden');
+        faceShapeImagePreview.src = lastErrorOriginalImageUrl;
+        faceShapeImagePreview.classList.remove('hidden');
+
+        // Все остальные элементы анализа и кнопок должны быть скрыты
+        symmetryZoomHint.classList.add('hidden');
+        downloadSymmetryImageButton.classList.add('hidden');
+        faceShapeZoomHint.classList.add('hidden');
+        downloadFaceShapeImageButton.classList.add('hidden');
         symmetryResultsContainer.classList.add('hidden');
         faceShapeResultsContainer.classList.add('hidden');
-        zoomHint.classList.add('hidden');
-        downloadImageButton.classList.add('hidden');
+        categoryButtonsContainer.classList.add('hidden');
+    } else { // Если вообще нет изображений
+        symmetryAnalysisBlock.classList.add('hidden');
+        faceShapeAnalysisBlock.classList.add('hidden');
+        categoryButtonsContainer.classList.add('hidden');
     }
-    loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden');
-    lastErrorProcessedImage = "#";
+
+    // Убедимся, что индикаторы загрузки всегда скрыты
+    symmetryLoadingIndicator.classList.add('hidden');
+    symmetryLoadingMessage.classList.add('hidden');
+    faceShapeLoadingIndicator.classList.add('hidden');
+    faceShapeLoadingMessage.classList.add('hidden');
+
+    lastErrorOriginalImageUrl = "#"; // Сбрасываем флаг ошибки
 }
 
 function goBackToAdvicePage() {
@@ -134,15 +169,10 @@ imageUploadInput.addEventListener('change', async function(event) {
     const file = event.target.files[0];
     hideErrorMessage();
 
-    imagePreviewContainer.classList.add('hidden');
-    previewImage.classList.add('hidden');
-    loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden');
+    // Скрываем все элементы анализа и кнопок в самом начале
+    symmetryAnalysisBlock.classList.add('hidden');
+    faceShapeAnalysisBlock.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
-    symmetryResultsContainer.classList.add('hidden');
-    faceShapeResultsContainer.classList.add('hidden');
-    zoomHint.classList.add('hidden');
-    downloadImageButton.classList.add('hidden');
 
     if (file) {
         console.log("Файл выбран:", file.name, "Тип:", file.type, "Размер:", file.size, "байт");
@@ -166,15 +196,32 @@ imageUploadInput.addEventListener('change', async function(event) {
         }
         // --- КОНЕЦ КЛИЕНТСКОЙ ВАЛИДАЦИИ ---
 
-        // Если валидация прошла, показываем спиннер и сообщение о загрузке
-        imagePreviewContainer.classList.remove('hidden');
-        loadingIndicator.classList.remove('hidden');
-        loadingMessage.classList.remove('hidden');
-        previewImage.classList.add('hidden');
+        // Если валидация прошла, показываем контейнеры анализа и спиннеры/сообщения
+        symmetryAnalysisBlock.classList.remove('hidden');
+        symmetryImagePreview.classList.add('hidden'); // Скрываем изображение, если было
+        symmetryLoadingIndicator.classList.remove('hidden');
+        symmetryLoadingMessage.classList.remove('hidden');
 
-        processedImageUrl = "#";
-        lastErrorProcessedImage = "#";
-        previewImage.src = "#";
+        faceShapeAnalysisBlock.classList.remove('hidden');
+        faceShapeImagePreview.classList.add('hidden'); // Скрываем изображение, если было
+        faceShapeLoadingIndicator.classList.remove('hidden');
+        faceShapeLoadingMessage.classList.remove('hidden');
+
+        // Скрываем подсказки, кнопки скачивания и текстовые блоки анализа
+        symmetryZoomHint.classList.add('hidden');
+        downloadSymmetryImageButton.classList.add('hidden');
+        symmetryResultsContainer.classList.add('hidden');
+
+        faceShapeZoomHint.classList.add('hidden');
+        downloadFaceShapeImageButton.classList.add('hidden');
+        faceShapeResultsContainer.classList.add('hidden');
+
+        // Очищаем предыдущие данные
+        lastSuccessfulSymmetryImageUrl = "#";
+        lastSuccessfulFaceShapeImageUrl = "#";
+        lastErrorOriginalImageUrl = "#";
+        symmetryImagePreview.src = "#";
+        faceShapeImagePreview.src = "#";
         symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
         symmetryDescriptionDisplay.textContent = "";
         faceShapeNameDisplay.textContent = "--";
@@ -194,67 +241,88 @@ imageUploadInput.addEventListener('change', async function(event) {
             if (response.ok) {
                 const result = await response.json();
 
-                const imageUrl = `data:image/jpeg;base64,${result.processed_image}`;
-                processedImageUrl = imageUrl;
-                lastErrorProcessedImage = "#";
-                previewImage.src = imageUrl;
+                // Обработанные изображения
+                lastSuccessfulSymmetryImageUrl = `data:image/jpeg;base64,${result.symmetry_image}`;
+                lastSuccessfulFaceShapeImageUrl = `data:image/jpeg;base64,${result.face_shape_image}`;
 
-                symmetryIndexDisplay.textContent = `Индекс симметрии: ${result.symmetry_index}%`;
-                symmetryDescriptionDisplay.textContent = result.symmetry_description;
+                symmetryImagePreview.src = lastSuccessfulSymmetryImageUrl;
+                faceShapeImagePreview.src = lastSuccessfulFaceShapeImageUrl;
+
+                // Результаты симметрии
+                symmetryIndexDisplay.textContent = `Индекс симметрии: ${result.symmetry_data.index}%`;
+                symmetryDescriptionDisplay.textContent = result.symmetry_data.description;
 
                 // Отображаем форму лица
                 if (result.face_shape) {
-                    faceShapeNameDisplay.textContent = result.face_shape.shape_name;
+                    faceShapeNameDisplay.textContent = result.face_shape.name;
                     faceShapeDescriptionDisplay.textContent = result.face_shape.description;
-                    faceShapeResultsContainer.classList.remove('hidden');
                 } else {
                     faceShapeNameDisplay.textContent = "Не определено";
                     faceShapeDescriptionDisplay.textContent = "Не удалось определить форму лица.";
-                    faceShapeResultsContainer.classList.remove('hidden');
                 }
 
-                previewImage.classList.remove('hidden');
-                loadingIndicator.classList.add('hidden');
-                loadingMessage.classList.add('hidden');
+                // Скрываем спиннеры и сообщения, показываем изображения и кнопки
+                symmetryImagePreview.classList.remove('hidden');
+                symmetryLoadingIndicator.classList.add('hidden');
+                symmetryLoadingMessage.classList.add('hidden');
+
+                faceShapeImagePreview.classList.remove('hidden');
+                faceShapeLoadingIndicator.classList.add('hidden');
+                faceShapeLoadingMessage.classList.add('hidden');
+
                 symmetryResultsContainer.classList.remove('hidden');
+                faceShapeResultsContainer.classList.remove('hidden');
                 categoryButtonsContainer.classList.remove('hidden');
-                zoomHint.classList.remove('hidden');
-                downloadImageButton.classList.remove('hidden');
+                symmetryZoomHint.classList.remove('hidden');
+                downloadSymmetryImageButton.classList.remove('hidden');
+                faceShapeZoomHint.classList.remove('hidden');
+                downloadFaceShapeImageButton.classList.remove('hidden');
+
             } else {
                 const errorData = await response.json();
                 console.error('Ошибка сервера:', errorData.error);
                 showErrorMessage(`Ошибка: ${errorData.error}`);
 
-                if (response.status === 422 && errorData.processed_image) {
-                    const imageUrl = `data:image/jpeg;base64,${errorData.processed_image}`;
-                    lastErrorProcessedImage = imageUrl;
-                    processedImageUrl = "#";
+                // В случае ошибки, показываем оригинальное изображение, если оно вернулось
+                if (errorData.original_image) {
+                    lastErrorOriginalImageUrl = `data:image/jpeg;base64,${errorData.original_image}`;
 
-                    previewImage.src = imageUrl;
-                    previewImage.classList.remove('hidden');
-                    imagePreviewContainer.classList.remove('hidden');
+                    symmetryAnalysisBlock.classList.remove('hidden');
+                    symmetryImagePreview.src = lastErrorOriginalImageUrl;
+                    symmetryImagePreview.classList.remove('hidden');
 
+                    faceShapeAnalysisBlock.classList.remove('hidden');
+                    faceShapeImagePreview.src = lastErrorOriginalImageUrl;
+                    faceShapeImagePreview.classList.remove('hidden');
+
+                    // Все остальные элементы анализа и кнопок должны быть скрыты
+                    symmetryZoomHint.classList.add('hidden');
+                    downloadSymmetryImageButton.classList.add('hidden');
+                    faceShapeZoomHint.classList.add('hidden');
+                    downloadFaceShapeImageButton.classList.add('hidden');
                     symmetryResultsContainer.classList.add('hidden');
                     faceShapeResultsContainer.classList.add('hidden');
+                    categoryButtonsContainer.classList.add('hidden');
+
                 } else {
-                    processedImageUrl = "#";
-                    lastErrorProcessedImage = "#";
                     resetMainPageStateAfterError();
                 }
-                loadingIndicator.classList.add('hidden');
-                loadingMessage.classList.add('hidden');
+                // Скрываем индикаторы, даже если есть оригинальное изображение
+                symmetryLoadingIndicator.classList.add('hidden');
+                symmetryLoadingMessage.classList.add('hidden');
+                faceShapeLoadingIndicator.classList.add('hidden');
+                faceShapeLoadingMessage.classList.add('hidden');
             }
         } catch (error) {
             console.error('Произошла ошибка сети или сервера:', error);
             showErrorMessage('Не удалось связаться с сервером. Пожалуйста, убедитесь, что бэкенд запущен, и попробуйте еще раз.');
-            processedImageUrl = "#";
-            lastErrorProcessedImage = "#";
             resetMainPageStateAfterError();
         }
 
     } else {
         console.log("Файл не выбран или отменен.");
-        if (processedImageUrl !== "#") {
+        // Если было успешно обработанное фото, восстанавливаем его
+        if (lastSuccessfulSymmetryImageUrl !== "#") {
             goBackToMainPage();
         } else {
             resetMainPageState();
@@ -264,55 +332,99 @@ imageUploadInput.addEventListener('change', async function(event) {
 
 // Вспомогательная функция для полного сброса состояния главной страницы
 function resetMainPageState() {
-    processedImageUrl = "#";
-    lastErrorProcessedImage = "#";
-    previewImage.src = "#";
-    previewImage.classList.add('hidden');
-    loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden');
-    imagePreviewContainer.classList.add('hidden');
-    symmetryResultsContainer.classList.add('hidden');
-    faceShapeResultsContainer.classList.add('hidden');
+    lastSuccessfulSymmetryImageUrl = "#";
+    lastSuccessfulFaceShapeImageUrl = "#";
+    lastErrorOriginalImageUrl = "#";
+
+    symmetryAnalysisBlock.classList.add('hidden');
+    faceShapeAnalysisBlock.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
-    zoomHint.classList.add('hidden');
-    downloadImageButton.classList.add('hidden');
+
+    // Сброс всех внутренних элементов
+    symmetryImagePreview.src = "#";
+    symmetryImagePreview.classList.add('hidden');
+    symmetryLoadingIndicator.classList.add('hidden');
+    symmetryLoadingMessage.classList.add('hidden');
+    symmetryZoomHint.classList.add('hidden');
+    downloadSymmetryImageButton.classList.add('hidden');
+    symmetryResultsContainer.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+
+    faceShapeImagePreview.src = "#";
+    faceShapeImagePreview.classList.add('hidden');
+    faceShapeLoadingIndicator.classList.add('hidden');
+    faceShapeLoadingMessage.classList.add('hidden');
+    faceShapeZoomHint.classList.add('hidden');
+    downloadFaceShapeImageButton.classList.add('hidden');
+    faceShapeResultsContainer.classList.add('hidden');
     faceShapeNameDisplay.textContent = "--";
     faceShapeDescriptionDisplay.textContent = "";
+
     hideErrorMessage();
 }
 
 // Вспомогательная функция для сброса состояния главной страницы ПОСЛЕ ОШИБКИ
+// Она НЕ скрывает контейнер errorMessageContainer
 function resetMainPageStateAfterError() {
-    processedImageUrl = "#";
-    // lastErrorProcessedImage НЕ сбрасывается здесь, чтобы его можно было использовать для восстановления
-    previewImage.src = "#";
-    previewImage.classList.add('hidden');
-    loadingIndicator.classList.add('hidden');
-    loadingMessage.classList.add('hidden');
-    imagePreviewContainer.classList.add('hidden');
-    symmetryResultsContainer.classList.add('hidden');
-    faceShapeResultsContainer.classList.add('hidden');
+    lastSuccessfulSymmetryImageUrl = "#";
+    lastSuccessfulFaceShapeImageUrl = "#";
+    // lastErrorOriginalImageUrl НЕ сбрасывается здесь, если оно было получено
+
+    symmetryAnalysisBlock.classList.add('hidden');
+    faceShapeAnalysisBlock.classList.add('hidden');
     categoryButtonsContainer.classList.add('hidden');
-    zoomHint.classList.add('hidden');
-    downloadImageButton.classList.add('hidden');
+
+    // Сброс всех внутренних элементов
+    symmetryImagePreview.src = "#";
+    symmetryImagePreview.classList.add('hidden');
+    symmetryLoadingIndicator.classList.add('hidden');
+    symmetryLoadingMessage.classList.add('hidden');
+    symmetryZoomHint.classList.add('hidden');
+    downloadSymmetryImageButton.classList.add('hidden');
+    symmetryResultsContainer.classList.add('hidden');
     symmetryIndexDisplay.textContent = "Индекс симметрии: --%";
     symmetryDescriptionDisplay.textContent = "";
+
+    faceShapeImagePreview.src = "#";
+    faceShapeImagePreview.classList.add('hidden');
+    faceShapeLoadingIndicator.classList.add('hidden');
+    faceShapeLoadingMessage.classList.add('hidden');
+    faceShapeZoomHint.classList.add('hidden');
+    downloadFaceShapeImageButton.classList.add('hidden');
+    faceShapeResultsContainer.classList.add('hidden');
     faceShapeNameDisplay.textContent = "--";
     faceShapeDescriptionDisplay.textContent = "";
+
     // НЕ скрываем hideErrorMessage() здесь! Сообщение должно остаться
 }
 
 
-// --- Обработчики для Зума и Скачивания ---
-previewImage.addEventListener('click', () => {
-    if (processedImageUrl !== "#" && !previewImage.classList.contains('hidden')) {
-        zoomedImage.src = processedImageUrl;
+// --- Обработчики для Зума (с учетом двух изображений) ---
+symmetryImagePreview.addEventListener('click', () => {
+    if (lastSuccessfulSymmetryImageUrl !== "#" && !symmetryImagePreview.classList.contains('hidden')) {
+        zoomedImage.src = lastSuccessfulSymmetryImageUrl;
+        imageZoomModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } else if (lastErrorOriginalImageUrl !== "#" && !symmetryImagePreview.classList.contains('hidden')) {
+        zoomedImage.src = lastErrorOriginalImageUrl;
         imageZoomModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 });
+
+faceShapeImagePreview.addEventListener('click', () => {
+    if (lastSuccessfulFaceShapeImageUrl !== "#" && !faceShapeImagePreview.classList.contains('hidden')) {
+        zoomedImage.src = lastSuccessfulFaceShapeImageUrl;
+        imageZoomModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } else if (lastErrorOriginalImageUrl !== "#" && !faceShapeImagePreview.classList.contains('hidden')) {
+        zoomedImage.src = lastErrorOriginalImageUrl;
+        imageZoomModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+});
+
 
 // Закрытие модального окна по кнопке "X"
 closeZoomModalButton.addEventListener('click', () => {
@@ -334,12 +446,38 @@ zoomedImage.addEventListener('click', () => {
     document.body.style.overflow = '';
 });
 
-// Скачивание изображения
-downloadImageButton.addEventListener('click', () => {
-    if (processedImageUrl !== "#") {
+// Скачивание изображения симметрии
+downloadSymmetryImageButton.addEventListener('click', () => {
+    if (lastSuccessfulSymmetryImageUrl !== "#") {
         const a = document.createElement('a');
-        a.href = processedImageUrl;
+        a.href = lastSuccessfulSymmetryImageUrl;
         a.download = 'face_symmetry_analysis.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } else if (lastErrorOriginalImageUrl !== "#") {
+        const a = document.createElement('a');
+        a.href = lastErrorOriginalImageUrl;
+        a.download = 'original_image_symmetry_error.jpg'; // Имя файла, если это оригинал из ошибки
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+});
+
+// Скачивание изображения формы лица
+downloadFaceShapeImageButton.addEventListener('click', () => {
+    if (lastSuccessfulFaceShapeImageUrl !== "#") {
+        const a = document.createElement('a');
+        a.href = lastSuccessfulFaceShapeImageUrl;
+        a.download = 'face_shape_analysis.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } else if (lastErrorOriginalImageUrl !== "#") {
+        const a = document.createElement('a');
+        a.href = lastErrorOriginalImageUrl;
+        a.download = 'original_image_shape_error.jpg'; // Имя файла, если это оригинал из ошибки
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

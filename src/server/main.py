@@ -15,8 +15,9 @@ PROJECT_ROOT = current_file.parent.parent.parent
 # Import your original utility functions
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
-from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry, \
-    determine_face_shape
+# ИЗМЕНЕНИЕ: Импортируем две НОВЫЕ функции отрисовки
+from utils.image_processing_utils import calculate_symmetry_index, determine_face_shape, \
+    draw_symmetry_analysis_image, draw_face_shape_analysis_image
 from utils.utils_landmarks import get_five_landmarks_from_net
 
 app = Flask(__name__)
@@ -94,8 +95,19 @@ def process_image():
         img = cv2.imdecode(data, cv2.IMREAD_COLOR)
 
         if img is None:
+            is_success, buffer = cv2.imencode(".jpg", img)
+            if not is_success:
+                raise Exception("Could not encode original image to JPEG for error response.")
+            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
+
             return jsonify({
-                               "error": "Не удалось декодировать изображение. Возможно, файл поврежден или не является корректным изображением."}), 400
+                "error": "Не удалось декодировать изображение. Возможно, файл поврежден или не является корректным изображением.",
+                "original_image": encoded_original_image,
+                "symmetry_image": encoded_original_image,
+                "face_shape_image": encoded_original_image,
+                "symmetry_data": {"index": 0.0, "description": "Анализ не выполнен."},
+                "face_shape": {"name": "Неопределенная форма", "description": "Анализ не выполнен."}
+            }), 400
 
         if face_alignment_model is None or face_cascade is None:
             raise Exception("Models are not loaded. Server might have failed to initialize.")
@@ -112,10 +124,11 @@ def process_image():
 
             return jsonify({
                 "error": "Лицо не обнаружено на изображении. Пожалуйста, попробуйте другую фотографию (убедитесь, что лицо хорошо видно).",
-                "processed_image": encoded_original_image,
-                "symmetry_index": 0.0,
-                "symmetry_description": "Лицо не обнаружено для анализа симметрии.",
-                "face_shape": None
+                "original_image": encoded_original_image,
+                "symmetry_image": encoded_original_image,
+                "face_shape_image": encoded_original_image,
+                "symmetry_data": {"index": 0.0, "description": "Лицо не обнаружено для анализа симметрии."},
+                "face_shape": {"name": "Неопределенная форма", "description": "Лицо не обнаружено для анализа формы."}
             }), 422
 
         # Получаем все ключевые точки от WFLW модели
@@ -129,50 +142,78 @@ def process_image():
 
             return jsonify({
                 "error": "Лицо обнаружено, но модель для ключевых точек не смогла его обработать. Пожалуйста, попробуйте другую фотографию.",
-                "processed_image": encoded_original_image,
-                "symmetry_index": 0.0,
-                "symmetry_description": "Модель ключевых точек не смогла обработать лицо.",
-                "face_shape": None
+                "original_image": encoded_original_image,
+                "symmetry_image": encoded_original_image,
+                "face_shape_image": encoded_original_image,
+                "symmetry_data": {"index": 0.0, "description": "Модель ключевых точек не смогла обработать лицо."},
+                "face_shape": {"name": "Неопределенная форма",
+                               "description": "Модель ключевых точек не смогла обработать лицо."}
             }), 422
 
+        # --- АНАЛИЗ СИММЕТРИИ ---
         symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
+        # ИЗМЕНЕНИЕ: Вызов новой функции для отрисовки симметрии
+        symmetry_image_stream = draw_symmetry_analysis_image(img, all_lmks)
+        symmetry_image_stream.seek(0)
+        encoded_symmetry_image = base64.b64encode(symmetry_image_stream.getvalue()).decode('utf-8')
 
-        # Функция теперь возвращает и точки для отрисовки
+        symmetry_data_response = {
+            "index": symmetry_index,
+            "description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
+                           ("Великолепная симметрия! Ваше лицо очень гармонично." if symmetry_index > 90 else
+                            "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
+                            "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
+                            "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали.")
+        }
+
+        # --- АНАЛИЗ ФОРМЫ ЛИЦА ---
         face_shape_data = determine_face_shape(all_lmks)
-
-        # Передаем эти точки в функцию отрисовки
-        processed_image_stream = process_image_with_landmarks_and_symmetry(
+        # ИЗМЕНЕНИЕ: Вызов новой функции для отрисовки формы
+        face_shape_image_stream = draw_face_shape_analysis_image(
             img,
             all_lmks,
             shape_measurement_points=face_shape_data.get('measurement_points')
         )
-        processed_image_stream.seek(0)
+        face_shape_image_stream.seek(0)
+        encoded_face_shape_image = base64.b64encode(face_shape_image_stream.getvalue()).decode('utf-8')
 
-        encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
-
-        # Формируем ответ клиенту без лишних данных (точки не отправляем)
         face_shape_response = {
-            "shape_name": face_shape_data.get("shape_name"),
+            "name": face_shape_data.get("shape_name"),
             "description": face_shape_data.get("description")
         }
 
+        # --- ФИНАЛЬНЫЙ ОТВЕТ ---
         return jsonify({
-            "processed_image": encoded_image,
-            "symmetry_index": symmetry_index,
-            "symmetry_description": f"Индекс симметрии вашего лица: {symmetry_index}%. " +
-                                    ("Великолепная симметрия! Ваше лицо очень гармонично." if symmetry_index > 90 else
-                                     "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
-                                     "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
-                                     "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали."),
+            "original_image": base64.b64encode(in_memory_file.getvalue()).decode('utf-8'),
+            "symmetry_image": encoded_symmetry_image,
+            "face_shape_image": encoded_face_shape_image,
+            "symmetry_data": symmetry_data_response,
             "face_shape": face_shape_response
         })
 
     except Exception as e:
         app.logger.error(f"Error processing image: {e}")
+        encoded_original_image = ""
+        if 'img' in locals() and img is not None:
+            is_success, buffer = cv2.imencode(".jpg", img)
+            if is_success:
+                encoded_original_image = base64.b64encode(buffer).decode('utf-8')
+
         if app.debug:
-            return jsonify({"error": f"Произошла внутренняя ошибка сервера: {str(e)}", "trace": str(e)}), 500
+            return jsonify({
+                "error": f"Произошла внутренняя ошибка сервера: {str(e)}",
+                "trace": str(e),
+                "original_image": encoded_original_image,
+                "symmetry_image": encoded_original_image,
+                "face_shape_image": encoded_original_image
+            }), 500
         else:
-            return jsonify({"error": "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте еще раз."}), 500
+            return jsonify({
+                "error": "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте еще раз.",
+                "original_image": encoded_original_image,
+                "symmetry_image": encoded_original_image,
+                "face_shape_image": encoded_original_image
+            }), 500
 
 
 if __name__ == '__main__':

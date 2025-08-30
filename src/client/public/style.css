@@ -86,14 +86,44 @@ h1 {
     font-weight: bold;
 }
 
+/* НОВЫЕ СТИЛИ: Блок для каждого анализа (симметрия, форма) */
+.analysis-block {
+    width: 100%;
+    margin-bottom: 25px; /* Отступ между блоками анализа */
+    background-color: #fcfcfc;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+.analysis-block:last-of-type {
+    margin-bottom: 0; /* Убираем отступ для последнего блока */
+}
+
+.block-title {
+    color: #007bff;
+    font-size: 1.2em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Общие стили для контейнеров изображений (внутри analysis-block) */
 .image-preview-container {
-    margin-top: 20px;
+    margin-top: 15px; /* Отступ от заголовка блока */
     border: 1px dashed #ccc;
     border-radius: 8px;
     padding: 10px;
     min-height: 150px;
     display: flex;
+    flex-direction: column; /* Для размещения спиннера/текста */
     justify-content: center;
     align-items: center;
     overflow: hidden;
@@ -102,7 +132,9 @@ h1 {
     position: relative;
 }
 
-#previewImage {
+/* Изображения внутри контейнеров */
+#symmetryImagePreview,
+#faceShapeImagePreview {
     max-width: 100%;
     height: auto;
     border-radius: 5px;
@@ -126,22 +158,25 @@ h1 {
     position: absolute;
     top: 50%;
     left: 50%;
-    margin-top: -30px;
-    margin-left: -20px;
+    transform: translate(-50%, -50%);
     z-index: 10;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Стили для сообщения о загрузке */
 .loading-message {
     position: absolute;
-    top: 50%;
+    top: calc(50% + 30px);
     left: 50%;
-    transform: translate(-50%, 10px);
+    transform: translateX(-50%);
     color: #555;
     font-size: 1.1em;
     font-weight: bold;
@@ -169,7 +204,7 @@ h1 {
     transition: background-color 0.3s ease;
     width: 100%;
     box-sizing: border-box;
-    margin-top: 20px;
+    margin-top: 10px;
     -webkit-appearance: none;
 }
 
@@ -177,8 +212,8 @@ h1 {
     background-color: #0d8bf0;
 }
 
-/* Стили для результатов симметрии */
-.symmetry-results-container {
+/* НОВЫЕ СТИЛИ: Контейнеры для текстовых результатов (симметрия и форма) */
+.results-text-container {
     margin-top: 20px;
     padding: 15px;
     border: 1px solid #dcdcdc;
@@ -189,21 +224,27 @@ h1 {
     text-align: left;
 }
 
-.symmetry-results-container h3 {
+.results-text-container h4 {
     color: #007bff;
     margin-top: 0;
     margin-bottom: 10px;
     font-size: 1.1em;
 }
 
-.symmetry-results-container p {
+.results-text-container p {
     margin-bottom: 5px;
     line-height: 1.4;
     font-size: 0.95em;
 }
 
-/* Стили для контейнера описания линий симметрии */
-.symmetry-lines-description-container {
+.results-text-container p#faceShapeNameDisplay { /* Специфично для названия формы */
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+}
+
+/* НОВЫЕ СТИЛИ: Контейнеры для описания линий (внутри results-text-container) */
+.lines-description-container {
     margin-top: 15px;
     padding: 10px;
     border-top: 1px dashed #ccc;
@@ -212,62 +253,45 @@ h1 {
     color: #555;
 }
 
-.symmetry-lines-description-container h4 {
+.lines-description-container h5 {
     margin-top: 0;
     margin-bottom: 8px;
     color: #333;
     font-size: 1em;
 }
 
-.symmetry-lines-description-container ul {
+.lines-description-container ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.symmetry-lines-description-container li {
+.lines-description-container li {
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
 }
 
-.symmetry-lines-description-container li::before {
-    content: '• ';
-    color: #007bff;
-    font-weight: bold;
+/* Цветовые квадратики для пояснения линий */
+.color-box {
     display: inline-block;
-    width: 1em;
-    margin-left: -1em;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
 }
+/* Определение цветов (ВАЖНО: Эти цвета должны соответствовать цветам линий в Python!) */
+.color-box.yellow { background-color: #FFFF00; } /* Желтая (центральная симметрия) */
+.color-box.orange { background-color: #FFA500; } /* Оранжевая (горизонтальная симметрия) */
+.color-box.red { background-color: #FF0000; } /* Красная (отклонения симметрии) */
 
-/* Стили для результатов формы лица */
-.face-shape-results-container {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: left;
-}
+.color-box.purple { background-color: #FF00FF; } /* Пурпурный (высота лица) */
+.color-box.cyan { background-color: #00FFFF; } /* Бирюзовый (скулы) */
+.color-box.green { background-color: #00FF00; } /* Зеленый (лоб) */
+.color-box.blue { background-color: #0000FF; } /* Синий (челюсть) */
 
-.face-shape-results-container h3 {
-    color: #007bff;
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1.1em;
-}
-
-.face-shape-results-container p {
-    margin-bottom: 5px;
-    line-height: 1.4;
-    font-size: 0.95em;
-}
-
-.face-shape-results-container p:first-of-type {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #333;
-}
 
 /* Контейнер для кнопок категорий */
 .category-buttons-container {
