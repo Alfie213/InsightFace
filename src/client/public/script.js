@@ -23,7 +23,7 @@ const faceShapeImageContainer = document.getElementById('faceShapeImageContainer
 const faceShapeImagePreview = document.getElementById('faceShapeImagePreview');
 const faceShapeLoadingIndicator = document.getElementById('faceShapeLoadingIndicator');
 const faceShapeLoadingMessage = document.getElementById('faceShapeLoadingMessage');
-const faceShapeZoomHint = document.getElementById('faceShapeZoomHint');
+const faceShapeZoomHint = document = document.getElementById('faceShapeZoomHint');
 const downloadFaceShapeImageButton = document.getElementById('downloadFaceShapeImageButton');
 const faceShapeResultsContainer = document.getElementById('faceShapeResultsContainer'); // Текстовый блок
 const faceShapeNameDisplay = document.getElementById('faceShapeNameDisplay');
@@ -83,7 +83,7 @@ const adviceData = {
 let currentCategory = '';
 let lastSuccessfulSymmetryImageUrl = "#";
 let lastSuccessfulFaceShapeImageUrl = "#";
-let lastErrorOriginalImageUrl = "#";
+let lastErrorOriginalImageUrl = "#"; // Для сохранения оригинального изображения при ошибке, когда нет анализов
 
 // --- Вспомогательная функция для отображения ошибки ---
 function showErrorMessage(message) {
@@ -111,52 +111,50 @@ function goBackToMainPage() {
     hideErrorMessage();
 
     // Логика отображения блоков анализа после возвращения на главную страницу
-    // Теперь она должна учитывать, что есть вкладки
-    if (lastSuccessfulSymmetryImageUrl !== "#") {
-        analysisTabsContainer.classList.remove('hidden'); // Показываем вкладки
-        // При возвращении на главную, по умолчанию показываем вкладку симметрии
-        switchAnalysisTab('symmetry');
+    // Теперь она должна учитывать, что есть вкладки и состояние ошибки
 
-        // Убедимся, что все элементы внутри активной вкладки видны
+    if (lastSuccessfulSymmetryImageUrl !== "#") { // Если был успешный анализ
+        analysisTabsContainer.classList.remove('hidden'); // Показываем вкладки
+        switchAnalysisTab('symmetry'); // По умолчанию показываем вкладку симметрии
+
+        // Убедимся, что все элементы внутри активной вкладки симметрии видны и заполнены
         symmetryImagePreview.src = lastSuccessfulSymmetryImageUrl;
         symmetryImagePreview.classList.remove('hidden');
         symmetryZoomHint.classList.remove('hidden');
         downloadSymmetryImageButton.classList.remove('hidden');
         symmetryResultsContainer.classList.remove('hidden');
 
-        // Элементы для FaceShape будут показаны только при активации вкладки "Форма"
-        // Но при этом мы должны убедиться, что они заполнены, чтобы при переключении сразу отобразились
+        // Убедимся, что данные для вкладки формы лица заполнены, но сам блок пока скрыт
         faceShapeImagePreview.src = lastSuccessfulFaceShapeImageUrl;
-        // faceShapeImagePreview.classList.remove('hidden'); // Скрыто по умолчанию
-        // faceShapeZoomHint.classList.remove('hidden'); // Скрыто по умолчанию
-        // downloadFaceShapeImageButton.classList.remove('hidden'); // Скрыто по умолчанию
-        // faceShapeResultsContainer.classList.remove('hidden'); // Скрыто по умолчанию
+        // faceShapeImagePreview.classList.add('hidden'); // Скрыто по умолчанию
+        // faceShapeZoomHint.classList.add('hidden'); // Скрыто по умолчанию
+        // downloadFaceShapeImageButton.classList.add('hidden'); // Скрыто по умолчанию
+        // faceShapeResultsContainer.classList.add('hidden'); // Скрыто по умолчанию
 
         categoryButtonsContainer.classList.remove('hidden');
 
-    } else if (lastErrorOriginalImageUrl !== "#") {
-        // Если была ошибка, но есть оригинал, то показываем блоки анализа, но без результатов
-        // и без кнопок вкладок
-        analysisTabsContainer.classList.add('hidden'); // Скрываем вкладки, если была ошибка
+    } else if (lastErrorOriginalImageUrl !== "#") { // Если была ошибка и есть оригинал изображения
+        analysisTabsContainer.classList.add('hidden'); // Скрываем вкладки
 
-        symmetryAnalysisBlock.classList.remove('hidden');
+        symmetryAnalysisBlock.classList.remove('hidden'); // Показываем блок симметрии для оригинального изображения
         symmetryImagePreview.src = lastErrorOriginalImageUrl;
         symmetryImagePreview.classList.remove('hidden');
 
-        faceShapeAnalysisBlock.classList.remove('hidden');
-        faceShapeImagePreview.src = lastErrorOriginalImageUrl;
-        faceShapeImagePreview.classList.remove('hidden');
+        faceShapeAnalysisBlock.classList.add('hidden'); // Скрываем блок формы лица
+        // faceShapeImagePreview.src = lastErrorOriginalImageUrl; // Нет необходимости показывать оригинал в двух местах
+        // faceShapeImagePreview.classList.remove('hidden'); // Скрываем, чтобы избежать дублирования
 
         // Все остальные элементы анализа и кнопок должны быть скрыты
         symmetryZoomHint.classList.add('hidden');
         downloadSymmetryImageButton.classList.add('hidden');
+        symmetryResultsContainer.classList.add('hidden');
+
         faceShapeZoomHint.classList.add('hidden');
         downloadFaceShapeImageButton.classList.add('hidden');
-        symmetryResultsContainer.classList.add('hidden');
         faceShapeResultsContainer.classList.add('hidden');
+
         categoryButtonsContainer.classList.add('hidden');
-    } else {
-        // Если вообще нет изображений
+    } else { // Если вообще нет изображений и не было ошибок
         analysisTabsContainer.classList.add('hidden'); // Скрываем вкладки
         symmetryAnalysisBlock.classList.add('hidden');
         faceShapeAnalysisBlock.classList.add('hidden');
@@ -169,7 +167,7 @@ function goBackToMainPage() {
     faceShapeLoadingIndicator.classList.add('hidden');
     faceShapeLoadingMessage.classList.add('hidden');
 
-    lastErrorOriginalImageUrl = "#"; // Сбрасываем флаг ошибки
+    lastErrorOriginalImageUrl = "#"; // Сбрасываем флаг ошибки после обработки
 }
 
 function goBackToAdvicePage() {
@@ -190,9 +188,23 @@ function switchAnalysisTab(activeTabId) {
     if (activeTabId === 'symmetry') {
         tabSymmetry.classList.add('active');
         symmetryAnalysisBlock.classList.remove('hidden');
+        // Показываем содержимое вкладки симметрии, если оно уже загружено
+        if (lastSuccessfulSymmetryImageUrl !== "#") {
+            symmetryImagePreview.classList.remove('hidden');
+            symmetryZoomHint.classList.remove('hidden');
+            downloadSymmetryImageButton.classList.remove('hidden');
+            symmetryResultsContainer.classList.remove('hidden');
+        }
     } else if (activeTabId === 'faceShape') {
         tabFaceShape.classList.add('active');
         faceShapeAnalysisBlock.classList.remove('hidden');
+        // Показываем содержимое вкладки формы лица, если оно уже загружено
+        if (lastSuccessfulFaceShapeImageUrl !== "#") {
+            faceShapeImagePreview.classList.remove('hidden');
+            faceShapeZoomHint.classList.remove('hidden');
+            downloadFaceShapeImageButton.classList.remove('hidden');
+            faceShapeResultsContainer.classList.remove('hidden');
+        }
     }
 }
 
@@ -223,14 +235,14 @@ imageUploadInput.addEventListener('change', async function(event) {
         if (!allowedTypes.includes(file.type)) {
             showErrorMessage(`Неподдерживаемый тип файла. Пожалуйста, загрузите изображение в формате JPG, PNG или GIF.`);
             event.target.value = '';
-            resetMainPageStateAfterError();
+            resetMainPageStateAfterError(); // Сброс состояния, но сохранение ошибки
             return;
         }
 
         if (file.size > maxSizeBytes) {
-            showErrorMessage(`Файл слишком большой. Максимальный размер файла: ${maxSizeMB} MB.`);
+            showErrorMessage(`Файл слишком большой. Максимальный размер файла: ${maxSizeBytes} MB.`);
             event.target.value = '';
-            resetMainPageStateAfterError();
+            resetMainPageStateAfterError(); // Сброс состояния, но сохранение ошибки
             return;
         }
         // --- КОНЕЦ КЛИЕНТСКОЙ ВАЛИДАЦИИ ---
@@ -281,18 +293,45 @@ imageUploadInput.addEventListener('change', async function(event) {
             if (response.ok) {
                 const result = await response.json();
 
-                // Обработанные изображения
+                if (!result.success && result.error === "Face not detected") { // Ошибка: Лицо не обнаружено
+                    showErrorMessage("Лицо на изображении не обнаружено. Пожалуйста, убедитесь, что лицо хорошо видно и изображение четкое.");
+                    // Скрываем все аналитические блоки и вкладки
+                    analysisTabsContainer.classList.add('hidden');
+                    symmetryAnalysisBlock.classList.add('hidden');
+                    faceShapeAnalysisBlock.classList.add('hidden');
+                    categoryButtonsContainer.classList.add('hidden');
+
+                    // Если бэкенд возвращает оригинальное изображение при такой ошибке, можем его показать
+                    if (result.original_image) {
+                        lastErrorOriginalImageUrl = `data:image/jpeg;base64,${result.original_image}`;
+                        // Опционально: показать оригинальное изображение в одном из контейнеров,
+                        // но без аналитических линий и результатов.
+                        symmetryAnalysisBlock.classList.remove('hidden');
+                        symmetryImagePreview.src = lastErrorOriginalImageUrl;
+                        symmetryImagePreview.classList.remove('hidden');
+                        symmetryLoadingIndicator.classList.add('hidden');
+                        symmetryLoadingMessage.classList.add('hidden');
+                    } else {
+                        // Если оригинальное изображение не вернулось, просто скрываем все индикаторы
+                        symmetryLoadingIndicator.classList.add('hidden');
+                        symmetryLoadingMessage.classList.add('hidden');
+                        faceShapeLoadingIndicator.classList.add('hidden');
+                        faceShapeLoadingMessage.classList.add('hidden');
+                    }
+                    return; // Прерываем дальнейшую обработку
+                }
+
+
+                // --- УСПЕШНЫЙ АНАЛИЗ ---
+                // Сохраняем URLы изображений анализа
                 lastSuccessfulSymmetryImageUrl = `data:image/jpeg;base64,${result.symmetry_image}`;
                 lastSuccessfulFaceShapeImageUrl = `data:image/jpeg;base64,${result.face_shape_image}`;
-
-                // symmetryImagePreview.src = lastSuccessfulSymmetryImageUrl; // Заполняем, но показываем позже
-                // faceShapeImagePreview.src = lastSuccessfulFaceShapeImageUrl; // Заполняем, но показываем позже
 
                 // Результаты симметрии
                 symmetryIndexDisplay.textContent = `Индекс симметрии: ${result.symmetry_data.index}%`;
                 symmetryDescriptionDisplay.textContent = result.symmetry_data.description;
 
-                // Отображаем форму лица
+                // Результаты формы лица
                 if (result.face_shape) {
                     faceShapeNameDisplay.textContent = result.face_shape.name;
                     faceShapeDescriptionDisplay.textContent = result.face_shape.description;
@@ -322,43 +361,40 @@ imageUploadInput.addEventListener('change', async function(event) {
 
                 // Для вкладки формы лица, ее содержимое будет показано только при ее активации
                 faceShapeImagePreview.src = lastSuccessfulFaceShapeImageUrl; // Изображение загружено, но не показано
+                // Остальное содержимое faceShapeAnalysisBlock будет показано функцией switchAnalysisTab при переключении
 
                 // Показываем кнопки категорий
                 categoryButtonsContainer.classList.remove('hidden');
 
-            } else {
+            } else { // Другие ошибки сервера
                 const errorData = await response.json();
                 console.error('Ошибка сервера:', errorData.error);
                 showErrorMessage(`Ошибка: ${errorData.error}`);
 
                 // В случае ошибки, показываем оригинальное изображение, если оно вернулось
+                // Но без вкладок и аналитических результатов
+                analysisTabsContainer.classList.add('hidden'); // Скрываем вкладки
+
                 if (errorData.original_image) {
                     lastErrorOriginalImageUrl = `data:image/jpeg;base64,${errorData.original_image}`;
-
-                    // Здесь мы не показываем вкладки, а сразу выводим блоки анализа с ошибкой
-                    analysisTabsContainer.classList.add('hidden');
-
+                    // Показываем только блок симметрии с оригинальным изображением
                     symmetryAnalysisBlock.classList.remove('hidden');
                     symmetryImagePreview.src = lastErrorOriginalImageUrl;
                     symmetryImagePreview.classList.remove('hidden');
 
-                    faceShapeAnalysisBlock.classList.remove('hidden');
-                    faceShapeImagePreview.src = lastErrorOriginalImageUrl;
-                    faceShapeImagePreview.classList.remove('hidden');
-
                     // Все остальные элементы анализа и кнопок должны быть скрыты
                     symmetryZoomHint.classList.add('hidden');
                     downloadSymmetryImageButton.classList.add('hidden');
-                    faceShapeZoomHint.classList.add('hidden');
-                    downloadFaceShapeImageButton.classList.add('hidden');
                     symmetryResultsContainer.classList.add('hidden');
-                    faceShapeResultsContainer.classList.add('hidden');
-                    categoryButtonsContainer.classList.add('hidden');
 
-                } else {
-                    resetMainPageStateAfterError();
+                } else { // Если оригинальное изображение не вернулось при ошибке
+                    // Скрываем все блоки анализа
+                    symmetryAnalysisBlock.classList.add('hidden');
+                    faceShapeAnalysisBlock.classList.add('hidden');
                 }
-                // Скрываем индикаторы, даже если есть оригинальное изображение
+                categoryButtonsContainer.classList.add('hidden'); // Скрываем кнопки категорий
+
+                // Скрываем индикаторы
                 symmetryLoadingIndicator.classList.add('hidden');
                 symmetryLoadingMessage.classList.add('hidden');
                 faceShapeLoadingIndicator.classList.add('hidden');
@@ -367,15 +403,15 @@ imageUploadInput.addEventListener('change', async function(event) {
         } catch (error) {
             console.error('Произошла ошибка сети или сервера:', error);
             showErrorMessage('Не удалось связаться с сервером. Пожалуйста, убедитесь, что бэкенд запущен, и попробуйте еще раз.');
-            resetMainPageStateAfterError();
+            resetMainPageStateAfterError(); // Сброс состояния, но сохранение ошибки
         }
 
     } else {
         console.log("Файл не выбран или отменен.");
-        // Если было успешно обработанное фото, восстанавливаем его
+        // Если было успешно обработанное фото, восстанавливаем его состояние
         if (lastSuccessfulSymmetryImageUrl !== "#") {
             goBackToMainPage();
-        } else {
+        } else { // Иначе полный сброс
             resetMainPageState();
         }
     }
@@ -390,7 +426,7 @@ function resetMainPageState() {
     analysisTabsContainer.classList.add('hidden'); // Скрываем вкладки
     symmetryAnalysisBlock.classList.add('hidden');
     faceShapeAnalysisBlock.classList.add('hidden');
-    categoryButtonsContainer.classList.add('hidden');
+    categoryButtonsContainer.add('hidden'); // Скрываем кнопки категорий
 
     // Сброс всех внутренних элементов симметрии
     symmetryImagePreview.src = "#";
@@ -418,7 +454,7 @@ function resetMainPageState() {
 }
 
 // Вспомогательная функция для сброса состояния главной страницы ПОСЛЕ ОШИБКИ
-// Она НЕ скрывает контейнер errorMessageContainer
+// Она НЕ скрывает контейнер errorMessageContainer, и НЕ сбрасывает lastErrorOriginalImageUrl
 function resetMainPageStateAfterError() {
     lastSuccessfulSymmetryImageUrl = "#";
     lastSuccessfulFaceShapeImageUrl = "#";
@@ -456,27 +492,22 @@ function resetMainPageStateAfterError() {
 
 
 // --- Обработчики для Зума (с учетом двух изображений) ---
+// Убрана дублирующая логика, теперь изображения загружаются в соответствующие preview,
+// и zoom берет src оттуда.
+
 symmetryImagePreview.addEventListener('click', () => {
-    // Проверяем, активна ли вкладка симметрии
-    if (tabSymmetry.classList.contains('active') && lastSuccessfulSymmetryImageUrl !== "#" && !symmetryImagePreview.classList.contains('hidden')) {
-        zoomedImage.src = lastSuccessfulSymmetryImageUrl;
-        imageZoomModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    } else if (tabSymmetry.classList.contains('active') && lastErrorOriginalImageUrl !== "#" && !symmetryImagePreview.classList.contains('hidden')) {
-        zoomedImage.src = lastErrorOriginalImageUrl;
+    // Убедимся, что изображение видно и не является заглушкой
+    if (!symmetryImagePreview.classList.contains('hidden') && symmetryImagePreview.src !== "#") {
+        zoomedImage.src = symmetryImagePreview.src;
         imageZoomModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 });
 
 faceShapeImagePreview.addEventListener('click', () => {
-    // Проверяем, активна ли вкладка формы лица
-    if (tabFaceShape.classList.contains('active') && lastSuccessfulFaceShapeImageUrl !== "#" && !faceShapeImagePreview.classList.contains('hidden')) {
-        zoomedImage.src = lastSuccessfulFaceShapeImageUrl;
-        imageZoomModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    } else if (tabFaceShape.classList.contains('active') && lastErrorOriginalImageUrl !== "#" && !faceShapeImagePreview.classList.contains('hidden')) {
-        zoomedImage.src = lastErrorOriginalImageUrl;
+    // Убедимся, что изображение видно и не является заглушкой
+    if (!faceShapeImagePreview.classList.contains('hidden') && faceShapeImagePreview.src !== "#") {
+        zoomedImage.src = faceShapeImagePreview.src;
         imageZoomModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -505,17 +536,11 @@ zoomedImage.addEventListener('click', () => {
 
 // Скачивание изображения симметрии
 downloadSymmetryImageButton.addEventListener('click', () => {
-    if (lastSuccessfulSymmetryImageUrl !== "#") {
+    // Скачиваем то, что отображено в превью симметрии
+    if (symmetryImagePreview.src !== "#") {
         const a = document.createElement('a');
-        a.href = lastSuccessfulSymmetryImageUrl;
+        a.href = symmetryImagePreview.src;
         a.download = 'face_symmetry_analysis.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    } else if (lastErrorOriginalImageUrl !== "#") {
-        const a = document.createElement('a');
-        a.href = lastErrorOriginalImageUrl;
-        a.download = 'original_image_symmetry_error.jpg'; // Имя файла, если это оригинал из ошибки
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -524,17 +549,11 @@ downloadSymmetryImageButton.addEventListener('click', () => {
 
 // Скачивание изображения формы лица
 downloadFaceShapeImageButton.addEventListener('click', () => {
-    if (lastSuccessfulFaceShapeImageUrl !== "#") {
+    // Скачиваем то, что отображено в превью формы лица
+    if (faceShapeImagePreview.src !== "#") {
         const a = document.createElement('a');
-        a.href = lastSuccessfulFaceShapeImageUrl;
+        a.href = faceShapeImagePreview.src;
         a.download = 'face_shape_analysis.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    } else if (lastErrorOriginalImageUrl !== "#") {
-        const a = document.createElement('a');
-        a.href = lastErrorOriginalImageUrl;
-        a.download = 'original_image_shape_error.jpg'; // Имя файла, если это оригинал из ошибки
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
