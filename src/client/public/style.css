@@ -89,7 +89,7 @@ h1 {
 /* НОВЫЕ СТИЛИ: Блок для каждого анализа (симметрия, форма) */
 .analysis-block {
     width: 100%;
-    margin-bottom: 25px; /* Отступ между блоками анализа */
+    margin-bottom: 25px; /* Этот отступ будет между содержимым и кнопками категорий */
     background-color: #fcfcfc;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -100,8 +100,8 @@ h1 {
     align-items: center;
 }
 
-.analysis-block:last-of-type {
-    margin-bottom: 0; /* Убираем отступ для последнего блока */
+.analysis-block.hidden {
+    display: none !important;
 }
 
 .block-title {
@@ -492,4 +492,40 @@ h1 {
         height: 35px;
         line-height: 30px;
     }
+}
+
+.analysis-tabs-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.tab-button {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 10px 15px;
+    border: none;
+    border-bottom: 3px solid transparent; /* Для активного состояния */
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-grow: 1; /* Распределяет кнопки равномерно */
+    text-align: center;
+    border-radius: 5px 5px 0 0; /* Закругленные углы сверху */
+    margin: 0 2px; /* Небольшой отступ между кнопками */
+}
+
+.tab-button:hover {
+    background-color: #dee2e6;
+    color: #212529;
+}
+
+.tab-button.active {
+    background-color: #007bff;
+    color: white;
+    border-bottom: 3px solid #0056b3; /* Синяя полоса снизу для активной вкладки */
+    font-weight: bold;
 }

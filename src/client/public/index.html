@@ -22,8 +22,15 @@
                 <p id="errorMessageText"></p>
             </div>
 
+            <!-- НОВЫЙ БЛОК: Кнопки-вкладки для переключения анализов -->
+            <div id="analysisTabs" class="analysis-tabs-container hidden">
+                <button id="tabSymmetry" class="tab-button active">Симметрия</button>
+                <button id="tabFaceShape" class="tab-button">Форма лица</button>
+            </div>
+
             <!-- БЛОК АНАЛИЗА СИММЕТРИИ -->
-            <div id="symmetryAnalysisBlock" class="analysis-block hidden">
+            <!-- Уберем класс 'hidden' по умолчанию, чтобы он был виден при загрузке -->
+            <div id="symmetryAnalysisBlock" class="analysis-block">
                 <h3 class="block-title">Анализ симметрии</h3>
                 <div id="symmetryImageContainer" class="image-preview-container">
                     <img id="symmetryImagePreview" src="#" alt="Анализ симметрии" class="hidden">
@@ -49,6 +56,7 @@
             </div>
 
             <!-- БЛОК АНАЛИЗА ФОРМЫ ЛИЦА -->
+            <!-- Добавим класс 'hidden' по умолчанию -->
             <div id="faceShapeAnalysisBlock" class="analysis-block hidden">
                 <h3 class="block-title">Анализ формы лица</h3>
                 <div id="faceShapeImageContainer" class="image-preview-container">
