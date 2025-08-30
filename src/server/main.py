@@ -15,7 +15,6 @@ PROJECT_ROOT = current_file.parent.parent.parent
 # Import your original utility functions
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
-# ИЗМЕНЕНИЕ: Импортируем две НОВЫЕ функции отрисовки
 from utils.image_processing_utils import calculate_symmetry_index, determine_face_shape, \
     draw_symmetry_analysis_image, draw_face_shape_analysis_image
 from utils.utils_landmarks import get_five_landmarks_from_net
@@ -23,6 +22,7 @@ from utils.utils_landmarks import get_five_landmarks_from_net
 app = Flask(__name__)
 CORS(app)
 
+# Ensure __init__.py files exist for proper module imports
 (current_file.parent / 'utils' / '__init__.py').touch(exist_ok=True)
 (current_file.parent.parent / '__init__.py').touch(exist_ok=True)
 (current_file.parent / '__init__.py').touch(exist_ok=True)
@@ -32,7 +32,7 @@ face_alignment_model = None
 face_cascade = None
 HAARCASCADE_PATH = PROJECT_ROOT / 'src' / 'server' / 'utils' / 'haarcascade_frontalface_default.xml'
 MODEL_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(MODEL_DEVICE)
+print(f"Using device for models: {MODEL_DEVICE}")
 
 
 def load_face_model():
@@ -65,17 +65,17 @@ def before_first_request():
 
 @app.route('/')
 def health_check():
-    return jsonify({"status": "Server is running!", "project_root": str(PROJECT_ROOT)})
+    return jsonify({"status": "Server is running!", "project_root": str(PROJECT_ROOT), "device": MODEL_DEVICE})
 
 
 @app.route('/process-image', methods=['POST'])
 def process_image():
     if 'image' not in request.files:
-        return jsonify({"error": "No image file provided"}), 400
+        return jsonify({"success": False, "error": "No image file provided"}), 400
 
     file = request.files['image']
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        return jsonify({"success": False, "error": "No selected file"}), 400
 
     # --- СЕРВЕРНАЯ ВАЛИДАЦИЯ: ТИП И РАЗМЕР ФАЙЛА ---
     allowed_types = ['image/jpeg', 'image/png', 'image/gif']
@@ -83,30 +83,28 @@ def process_image():
     max_size_bytes = max_size_mb * 1024 * 1024
 
     if file.content_type not in allowed_types:
-        return jsonify({"error": f"Неподдерживаемый тип файла. Допустимы: {', '.join(allowed_types)}"}), 400
+        return jsonify(
+            {"success": False, "error": f"Неподдерживаемый тип файла. Допустимы: {', '.join(allowed_types)}"}), 400
 
+    # Проверяем размер файла с помощью request.content_length, если он доступен
+    # Если нет, то проверку размера можно сделать после сохранения в in_memory_file
     if request.content_length is not None and request.content_length > max_size_bytes:
-        return jsonify({"error": f"Файл слишком большой. Максимальный размер файла: {max_size_mb} MB."}), 400
+        # ПРАВКА 1: Мегабайты вместо мегабит
+        return jsonify(
+            {"success": False, "error": f"Файл слишком большой. Максимальный размер файла: {max_size_mb} MB."}), 400
 
     try:
         in_memory_file = io.BytesIO()
         file.save(in_memory_file)
+        in_memory_file.seek(0)  # Важно сбросить указатель после сохранения
         data = np.frombuffer(in_memory_file.getvalue(), dtype=np.uint8)
         img = cv2.imdecode(data, cv2.IMREAD_COLOR)
 
         if img is None:
-            is_success, buffer = cv2.imencode(".jpg", img)
-            if not is_success:
-                raise Exception("Could not encode original image to JPEG for error response.")
-            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
-
+            # Если не удалось декодировать, то оригинальное изображение тоже не сможем вернуть корректно
             return jsonify({
-                "error": "Не удалось декодировать изображение. Возможно, файл поврежден или не является корректным изображением.",
-                "original_image": encoded_original_image,
-                "symmetry_image": encoded_original_image,
-                "face_shape_image": encoded_original_image,
-                "symmetry_data": {"index": 0.0, "description": "Анализ не выполнен."},
-                "face_shape": {"name": "Неопределенная форма", "description": "Анализ не выполнен."}
+                "success": False,
+                "error": "Не удалось декодировать изображение. Возможно, файл поврежден или не является корректным изображением."
             }), 400
 
         if face_alignment_model is None or face_cascade is None:
@@ -117,43 +115,27 @@ def process_image():
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         if len(faces) == 0:
-            is_success, buffer = cv2.imencode(".jpg", img)
-            if not is_success:
-                raise Exception("Could not encode original image to JPEG for error response.")
-            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
-
+            # ПРАВКА 2 и 3: Если лицо не обнаружено, НЕ возвращаем изображение с бэка.
             return jsonify({
-                "error": "Лицо не обнаружено на изображении. Пожалуйста, попробуйте другую фотографию (убедитесь, что лицо хорошо видно).",
-                "original_image": encoded_original_image,
-                "symmetry_image": encoded_original_image,
-                "face_shape_image": encoded_original_image,
-                "symmetry_data": {"index": 0.0, "description": "Лицо не обнаружено для анализа симметрии."},
-                "face_shape": {"name": "Неопределенная форма", "description": "Лицо не обнаружено для анализа формы."}
-            }), 422
+                "success": False,
+                "error": "Face not detected"  # Специальное сообщение об ошибке для фронтенда
+            }), 422  # 422 Unprocessable Entity - подходящий статус для такого случая
 
         # Получаем все ключевые точки от WFLW модели
         all_lmks = get_lmks_by_img(face_alignment_model, img, device=MODEL_DEVICE)
 
         if all_lmks is None or len(all_lmks) == 0:
-            is_success, buffer = cv2.imencode(".jpg", img)
-            if not is_success:
-                raise Exception("Could not encode original image to JPEG for error response.")
-            encoded_original_image = base64.b64encode(buffer).decode('utf-8')
-
+            # ПРАВКА 2 и 3: Если ключевые точки не найдены, НЕ возвращаем изображение с бэка.
             return jsonify({
-                "error": "Лицо обнаружено, но модель для ключевых точек не смогла его обработать. Пожалуйста, попробуйте другую фотографию.",
-                "original_image": encoded_original_image,
-                "symmetry_image": encoded_original_image,
-                "face_shape_image": encoded_original_image,
-                "symmetry_data": {"index": 0.0, "description": "Модель ключевых точек не смогла обработать лицо."},
-                "face_shape": {"name": "Неопределенная форма",
-                               "description": "Модель ключевых точек не смогла обработать лицо."}
+                "success": False,
+                "error": "Face not detected"
+                # Специальное сообщение об ошибке для фронтенда, если лицо обнаружено, но точки нет
             }), 422
 
         # --- АНАЛИЗ СИММЕТРИИ ---
         symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
-        # ИЗМЕНЕНИЕ: Вызов новой функции для отрисовки симметрии
-        symmetry_image_stream = draw_symmetry_analysis_image(img, all_lmks)
+        symmetry_image_stream = draw_symmetry_analysis_image(img.copy(),
+                                                             all_lmks)  # Передаем копию, чтобы не изменять оригинал для формы
         symmetry_image_stream.seek(0)
         encoded_symmetry_image = base64.b64encode(symmetry_image_stream.getvalue()).decode('utf-8')
 
@@ -168,9 +150,8 @@ def process_image():
 
         # --- АНАЛИЗ ФОРМЫ ЛИЦА ---
         face_shape_data = determine_face_shape(all_lmks)
-        # ИЗМЕНЕНИЕ: Вызов новой функции для отрисовки формы
         face_shape_image_stream = draw_face_shape_analysis_image(
-            img,
+            img.copy(),  # Передаем копию
             all_lmks,
             shape_measurement_points=face_shape_data.get('measurement_points')
         )
@@ -182,9 +163,10 @@ def process_image():
             "description": face_shape_data.get("description")
         }
 
-        # --- ФИНАЛЬНЫЙ ОТВЕТ ---
+        # --- ФИНАЛЬНЫЙ УСПЕШНЫЙ ОТВЕТ ---
         return jsonify({
-            "original_image": base64.b64encode(in_memory_file.getvalue()).decode('utf-8'),
+            "success": True,  # Добавляем флаг успеха
+            # "original_image": base64.b64encode(in_memory_file.getvalue()).decode('utf-8'), # Оригинал не требуется при успехе
             "symmetry_image": encoded_symmetry_image,
             "face_shape_image": encoded_face_shape_image,
             "symmetry_data": symmetry_data_response,
@@ -192,28 +174,15 @@ def process_image():
         })
 
     except Exception as e:
-        app.logger.error(f"Error processing image: {e}")
-        encoded_original_image = ""
-        if 'img' in locals() and img is not None:
-            is_success, buffer = cv2.imencode(".jpg", img)
-            if is_success:
-                encoded_original_image = base64.b64encode(buffer).decode('utf-8')
+        app.logger.error(f"Error processing image: {e}", exc_info=True)  # exc_info=True для полного traceback
 
-        if app.debug:
-            return jsonify({
-                "error": f"Произошла внутренняя ошибка сервера: {str(e)}",
-                "trace": str(e),
-                "original_image": encoded_original_image,
-                "symmetry_image": encoded_original_image,
-                "face_shape_image": encoded_original_image
-            }), 500
-        else:
-            return jsonify({
-                "error": "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте еще раз.",
-                "original_image": encoded_original_image,
-                "symmetry_image": encoded_original_image,
-                "face_shape_image": encoded_original_image
-            }), 500
+        # В случае других внутренних ошибок, возвращаем только сообщение об ошибке
+        # без изображений, так как анализы не были успешными.
+        error_message = f"Произошла внутренняя ошибка сервера. {str(e)}" if app.debug else "Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте еще раз."
+        return jsonify({
+            "success": False,
+            "error": error_message
+        }), 500
 
 
 if __name__ == '__main__':

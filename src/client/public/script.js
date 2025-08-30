@@ -241,7 +241,7 @@ imageUploadInput.addEventListener('change', async function(event) {
         }
 
         if (file.size > maxSizeBytes) {
-            showErrorMessage(`Файл слишком большой. Максимальный размер файла: ${maxSizeBytes} MB.`);
+            showErrorMessage(`Файл слишком большой. Максимальный размер файла: ${maxSizeMB} MB.`);
             event.target.value = '';
             resetMainPageStateAfterError(); // Сброс состояния, но сохранение ошибки
             return;
