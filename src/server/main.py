@@ -16,7 +16,7 @@ PROJECT_ROOT = current_file.parent.parent.parent
 from utils.utils_inference import get_lmks_by_img, get_model_by_name
 # Import new utility functions
 from utils.image_processing_utils import calculate_symmetry_index, process_image_with_landmarks_and_symmetry, \
-    determine_face_shape  # НОВОЕ
+    determine_face_shape
 from utils.utils_landmarks import get_five_landmarks_from_net
 
 app = Flask(__name__)
@@ -115,10 +115,10 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Лицо не обнаружено для анализа симметрии.",
-                "face_shape": None  # НОВОЕ: Возвращаем None для формы лица
+                "face_shape": None
             }), 422
 
-            # Получаем все ключевые точки от WFLW модели
+        # Получаем все ключевые точки от WFLW модели
         all_lmks = get_lmks_by_img(face_alignment_model, img, device=MODEL_DEVICE)
 
         if all_lmks is None or len(all_lmks) == 0:
@@ -132,17 +132,29 @@ def process_image():
                 "processed_image": encoded_original_image,
                 "symmetry_index": 0.0,
                 "symmetry_description": "Модель ключевых точек не смогла обработать лицо.",
-                "face_shape": None  # НОВОЕ: Возвращаем None для формы лица
+                "face_shape": None
             }), 422
 
         symmetry_index = calculate_symmetry_index(all_lmks, img_width=img.shape[1])
 
+        # Функция теперь возвращает и точки для отрисовки
         face_shape_data = determine_face_shape(all_lmks)
 
-        processed_image_stream = process_image_with_landmarks_and_symmetry(img, all_lmks)
+        # Передаем эти точки в функцию отрисовки
+        processed_image_stream = process_image_with_landmarks_and_symmetry(
+            img,
+            all_lmks,
+            shape_measurement_points=face_shape_data.get('measurement_points')
+        )
         processed_image_stream.seek(0)
 
         encoded_image = base64.b64encode(processed_image_stream.getvalue()).decode('utf-8')
+
+        # Формируем ответ клиенту без лишних данных (точки не отправляем)
+        face_shape_response = {
+            "shape_name": face_shape_data.get("shape_name"),
+            "description": face_shape_data.get("description")
+        }
 
         return jsonify({
             "processed_image": encoded_image,
@@ -152,7 +164,7 @@ def process_image():
                                      "Высокая симметрия. У вас очень сбалансированные черты лица." if symmetry_index > 75 else
                                      "Хорошая симметрия. Черты лица достаточно гармоничны." if symmetry_index > 50 else
                                      "Есть заметные отклонения в симметрии. Возможно, стоит обратить внимание на некоторые детали."),
-            "face_shape": face_shape_data  # НОВОЕ: Добавляем данные о форме лица
+            "face_shape": face_shape_response
         })
 
     except Exception as e:
